@@ -1,0 +1,287 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Users & Auth ───────────────────────────────────────
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String?
+  displayName   String
+  username      String?  @unique
+  avatarUrl     String?
+  bio           String?
+  city          String?
+  country       String?
+  walletAddress String?
+  discord       String?
+  xHandle       String?
+  telegram      String?
+  github        String?
+  skills        String?  // JSON array stored as string
+  interests     String?  // JSON array stored as string
+  roles         String?  // JSON array stored as string
+  availability  String?  // e.g., "Open to Hack", "Just Exploring"
+  socialLinks   String?  // JSON array of {name, url}
+  // Privacy settings - what to show other members
+  showEmail     Boolean  @default(false)
+  showWallet    Boolean  @default(false)
+  showDiscord   Boolean  @default(true)
+  showTelegram  Boolean  @default(true)
+  showXHandle   Boolean  @default(true)
+  showGithub    Boolean  @default(true)
+  showCity      Boolean  @default(true)
+  showBio       Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      AuthSession[]
+  memberships   UserRegionMembership[]
+  adminRole     PlatformAdmin?
+  playbooks     Playbook[]
+  programs      Program[]
+  guides        Guide[]
+  announcements Announcement[]
+  notifications Notification[]
+  auditLogs     AuditLog[]
+
+  @@map("portal_users")
+}
+
+model AuthSession {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_auth_sessions")
+}
+
+// ─── Regions ────────────────────────────────────────────
+
+model Region {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  country       String?
+  description   String?
+  logoUrl       String?
+  coverImageUrl String?
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  memberships   UserRegionMembership[]
+  playbooks     Playbook[]
+  programs      Program[]
+  guides        Guide[]
+  announcements Announcement[]
+
+  @@map("portal_regions")
+}
+
+// ─── Membership ─────────────────────────────────────────
+
+model UserRegionMembership {
+  id        String   @id @default(cuid())
+  userId    String
+  regionId  String
+  role      String   @default("member") // member, lead, co_lead
+  status    String   @default("accepted") // pending, accepted, rejected
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  region Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, regionId])
+  @@map("portal_user_region_memberships")
+}
+
+// ─── Membership Application (no login required) ────────
+
+model MembershipApplication {
+  id              String   @id @default(cuid())
+  // Q1: What should we call you?
+  fullName        String
+  email           String   @unique
+  discord         String
+  xHandle         String
+  telegram        String?
+  github          String?
+  // Q2: Where are you based?
+  country         String
+  city            String?
+  // Q3: Interests (comma-separated)
+  interests       String?
+  interestsOther  String?
+  // Q4: Avalanche familiarity
+  familiarity     String?
+  // Q5: What excites you
+  excitement      String?
+  // Q6: Link + context
+  portfolioLink   String?
+  portfolioContext String?
+  // Q7: Time commitment
+  timeCommitment  String?
+  // Q8: Anything else
+  anythingElse    String?
+
+  status          String   @default("pending")
+  reviewedBy      String?
+  reviewNote      String?
+  reviewedAt      DateTime?
+  createdAt       DateTime @default(now())
+
+  @@map("portal_membership_applications")
+}
+
+// ─── Content: Playbooks ─────────────────────────────────
+
+model Playbook {
+  id            String   @id @default(cuid())
+  regionId      String
+  title         String
+  description   String?
+  content       String?  @db.Text
+  coverImageUrl String?
+  visibility    String   @default("member") // public, member
+  status        String   @default("draft") // draft, published
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  region  Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdById], references: [id])
+
+  @@map("portal_playbooks")
+}
+
+// ─── Content: Programs ──────────────────────────────────
+
+model Program {
+  id          String    @id @default(cuid())
+  regionId    String
+  title       String
+  description String?
+  content     String?   @db.Text
+  eligibility String?
+  benefits    String?
+  status      String    @default("draft") // draft, active, completed
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  region  Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdById], references: [id])
+
+  @@map("portal_programs")
+}
+
+// ─── Content: Guides ────────────────────────────────────
+
+model Guide {
+  id            String   @id @default(cuid())
+  regionId      String
+  title         String
+  slug          String   @unique
+  category      String?
+  content       String?  @db.Text
+  coverImageUrl String?
+  readTime      Int?
+  visibility    String   @default("member") // public, member
+  status        String   @default("draft") // draft, published
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  region  Region @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  creator User   @relation(fields: [createdById], references: [id])
+
+  @@map("portal_guides")
+}
+
+// ─── Announcements ──────────────────────────────────────
+
+model Announcement {
+  id          String    @id @default(cuid())
+  regionId    String?
+  title       String
+  content     String    @db.Text
+  priority    String    @default("normal") // normal, high, urgent
+  isGlobal    Boolean   @default(false)
+  expiresAt   DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  region  Region? @relation(fields: [regionId], references: [id], onDelete: Cascade)
+  creator User    @relation(fields: [createdById], references: [id])
+
+  @@map("portal_announcements")
+}
+
+// ─── Admin ──────────────────────────────────────────────
+
+model PlatformAdmin {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  role      String   @default("super_admin") // super_admin
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_platform_admins")
+}
+
+// ─── Audit Log ──────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  module     String
+  entityType String?
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("portal_audit_logs")
+}
+
+// ─── Notifications ──────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info") // info, success, warning
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_notifications")
+}

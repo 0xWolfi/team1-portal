@@ -1,0 +1,37 @@
+'use client'
+import { Suspense } from 'react'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { AuthGuard } from '@/components/layout/auth-guard'
+import { Sidebar } from '@/components/layout/sidebar'
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense>
+      <AppLayoutContent>{children}</AppLayoutContent>
+    </Suspense>
+  )
+}
+
+function AppLayoutContent({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname()
+  const isAdmin = pathname.startsWith('/admin')
+
+  return (
+    <AuthGuard requireAdmin={isAdmin} allowRegionLead={isAdmin}>
+      <div className="min-h-[100svh] text-white relative font-sans selection:bg-white/20">
+        {/* Background gradient */}
+        <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-black/80 via-black/50 to-transparent pointer-events-none z-0" />
+
+        {/* Sidebar */}
+        <Sidebar isAdmin={isAdmin} />
+
+        {/* Main Content */}
+        <div className="lg:pl-[260px] flex flex-col min-h-[100svh]">
+          <main className="flex-1 relative z-10 px-5 md:px-8 lg:px-10 py-6 lg:py-8">
+            {children}
+          </main>
+        </div>
+      </div>
+    </AuthGuard>
+  )
+}
