@@ -20,6 +20,19 @@ export const authOptions: NextAuthOptions = {
       const existingUser = await prisma.user.findUnique({ where: { email } })
       if (existingUser) return true
 
+      // Auto-whitelist all @team1.network emails
+      if (email.endsWith('@team1.network')) {
+        await prisma.user.create({
+          data: {
+            email,
+            displayName: user.name || email.split('@')[0],
+            avatarUrl: user.image || null,
+            emailVerified: true,
+          },
+        })
+        return true
+      }
+
       // Check if email is in the roster whitelist
       const rosterEntry = await prisma.memberRoster.findUnique({ where: { email } })
       if (rosterEntry) {

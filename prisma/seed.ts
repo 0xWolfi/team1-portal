@@ -18,6 +18,7 @@ async function main() {
   await prisma.authSession.deleteMany()
   await prisma.user.deleteMany()
   await prisma.region.deleteMany()
+  await prisma.memberRoster.deleteMany()
 
   // Create regions
   const regions = await Promise.all([
@@ -30,50 +31,45 @@ async function main() {
   ])
 
   // Super Admins
-  const admin1 = await prisma.user.create({
-    data: {
-      email: 'sarnavo@team1.network',
-      displayName: 'Sarnavo',
-      username: 'sarnavo',
-      emailVerified: true,
-    },
-  })
-  await prisma.platformAdmin.create({ data: { userId: admin1.id, role: 'super_admin' } })
+  const adminEmails = [
+    { email: 'sarnavo@team1.network', name: 'Sarnavo', username: 'sarnavo' },
+    { email: 'systum877@gmail.com', name: 'Systum', username: 'systum' },
+    { email: 'armin@team1.network', name: 'Armin', username: 'armin' },
+    { email: 'ellio@team1.network', name: 'Ellio', username: 'ellio' },
+  ]
 
-  const admin2 = await prisma.user.create({
-    data: {
-      email: 'systum877@gmail.com',
-      displayName: 'Systum',
-      username: 'systum',
-      emailVerified: true,
-    },
-  })
-  await prisma.platformAdmin.create({ data: { userId: admin2.id, role: 'super_admin' } })
+  for (const admin of adminEmails) {
+    const user = await prisma.user.create({
+      data: {
+        email: admin.email,
+        displayName: admin.name,
+        username: admin.username,
+        emailVerified: true,
+      },
+    })
+    await prisma.platformAdmin.create({ data: { userId: user.id, role: 'super_admin' } })
 
-  // Give both super admins membership to all regions
-  await prisma.userRegionMembership.createMany({
-    data: [
-      ...regions.map((r, i) => ({ userId: admin1.id, regionId: r.id, role: 'lead' as const, status: 'accepted' as const, isPrimary: i === 0 })),
-      ...regions.map((r, i) => ({ userId: admin2.id, regionId: r.id, role: 'lead' as const, status: 'accepted' as const, isPrimary: i === 0 })),
-    ],
-  })
+    // Give super admin membership to all regions as lead
+    await prisma.userRegionMembership.createMany({
+      data: regions.map((r, i) => ({
+        userId: user.id, regionId: r.id, role: 'lead' as const, status: 'accepted' as const, isPrimary: i === 0,
+      })),
+    })
+  }
 
-  // Add both admins to roster so they can always log in
+  // Add all admins to roster
   await prisma.memberRoster.createMany({
-    data: [
-      { email: 'sarnavo@team1.network', name: 'Sarnavo', isUsed: true },
-      { email: 'systum877@gmail.com', name: 'Systum', isUsed: true },
-    ],
+    data: adminEmails.map((a) => ({ email: a.email, name: a.name, isUsed: true })),
   })
 
   console.log('Seed complete!')
   console.log('')
   console.log('Super Admins:')
   console.log('─────────────────────────────────────────')
-  console.log('  sarnavo@team1.network')
-  console.log('  systum877@gmail.com')
+  adminEmails.forEach((a) => console.log(`  ${a.email}`))
   console.log('')
-  console.log('Both have full super_admin access + lead on all regions.')
+  console.log('All have full super_admin access + lead on all regions.')
+  console.log('All @team1.network emails are auto-whitelisted at login.')
 }
 
 main()
