@@ -20,9 +20,6 @@ export const CONTENT_STATUS = {
 
 export const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: 'LayoutDashboard' },
-  { label: 'Playbooks', href: '/playbooks', icon: 'BookOpen' },
-  { label: 'Programs', href: '/programs', icon: 'Briefcase' },
-  { label: 'Guides', href: '/guides', icon: 'FileText' },
   { label: 'Announcements', href: '/announcements', icon: 'Megaphone' },
   { label: 'Directory', href: '/directory', icon: 'Users' },
 ] as const

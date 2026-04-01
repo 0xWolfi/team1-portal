@@ -6,6 +6,12 @@ export async function GET(request: Request) {
     const user = await getUserFromRequest(request)
     if (!user) return apiError('Unauthorized', 401)
 
+    const activities = await prisma.memberActivity.findMany({
+      where: { userId: user.id },
+      orderBy: { date: 'desc' },
+      take: 20,
+    })
+
     return apiSuccess({
       id: user.id,
       email: user.email,
@@ -13,26 +19,52 @@ export async function GET(request: Request) {
       username: user.username,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
-      city: user.city,
+
+      // Required fields
       country: user.country,
-      walletAddress: user.walletAddress,
       discord: user.discord,
       xHandle: user.xHandle,
+
+      // Location
+      city: user.city,
+      state: user.state,
+
+      // Personal
+      studentStatus: user.studentStatus,
+      university: user.university,
+      languages: user.languages,
+
+      // Social platforms
       telegram: user.telegram,
       github: user.github,
+      linkedin: user.linkedin,
+      instagram: user.instagram,
+      reddit: user.reddit,
+      arena: user.arena,
+      youtube: user.youtube,
+      tiktok: user.tiktok,
+      podcast: user.podcast,
+      blog: user.blog,
+      website: user.website,
+
+      // Profile extras
+      walletAddress: user.walletAddress,
       skills: user.skills,
       interests: user.interests,
       roles: user.roles,
       availability: user.availability,
       socialLinks: user.socialLinks,
-      showEmail: user.showEmail,
-      showWallet: user.showWallet,
-      showDiscord: user.showDiscord,
-      showTelegram: user.showTelegram,
-      showXHandle: user.showXHandle,
-      showGithub: user.showGithub,
-      showCity: user.showCity,
-      showBio: user.showBio,
+      eventHostingPrefs: user.eventHostingPrefs,
+
+      // Lead-only fields
+      cChainAddress: user.cChainAddress,
+      developmentGoals: user.developmentGoals,
+      shippingAddress: user.shippingAddress,
+      merchSizes: user.merchSizes,
+
+      // Privacy
+      privacySettings: user.privacySettings,
+
       emailVerified: user.emailVerified,
       isActive: user.isActive,
       createdAt: user.createdAt.toISOString(),
@@ -44,6 +76,16 @@ export async function GET(request: Request) {
         status: m.status,
         isPrimary: m.isPrimary,
         region: m.region,
+      })),
+      activities: activities.map((a) => ({
+        id: a.id,
+        userId: a.userId,
+        type: a.type,
+        title: a.title,
+        description: a.description,
+        date: a.date.toISOString(),
+        link: a.link,
+        createdAt: a.createdAt.toISOString(),
       })),
     })
   } catch (e) {
@@ -75,26 +117,51 @@ export async function PUT(request: Request) {
         displayName: body.displayName ?? undefined,
         username: body.username ?? undefined,
         bio: body.bio ?? undefined,
-        city: body.city ?? undefined,
+
+        // Required fields
         country: body.country ?? undefined,
-        walletAddress: body.walletAddress ?? undefined,
         discord: body.discord ?? undefined,
         xHandle: body.xHandle ?? undefined,
+
+        // Location
+        city: body.city ?? undefined,
+        state: body.state ?? undefined,
+
+        // Personal
+        studentStatus: body.studentStatus ?? undefined,
+        university: body.university ?? undefined,
+        languages: body.languages ?? undefined,
+
+        // Social platforms
         telegram: body.telegram ?? undefined,
         github: body.github ?? undefined,
+        linkedin: body.linkedin ?? undefined,
+        instagram: body.instagram ?? undefined,
+        reddit: body.reddit ?? undefined,
+        arena: body.arena ?? undefined,
+        youtube: body.youtube ?? undefined,
+        tiktok: body.tiktok ?? undefined,
+        podcast: body.podcast ?? undefined,
+        blog: body.blog ?? undefined,
+        website: body.website ?? undefined,
+
+        // Profile extras
+        walletAddress: body.walletAddress ?? undefined,
         skills: body.skills ?? undefined,
         interests: body.interests ?? undefined,
         roles: body.roles ?? undefined,
         availability: body.availability ?? undefined,
         socialLinks: body.socialLinks ?? undefined,
-        showEmail: body.showEmail ?? undefined,
-        showWallet: body.showWallet ?? undefined,
-        showDiscord: body.showDiscord ?? undefined,
-        showTelegram: body.showTelegram ?? undefined,
-        showXHandle: body.showXHandle ?? undefined,
-        showGithub: body.showGithub ?? undefined,
-        showCity: body.showCity ?? undefined,
-        showBio: body.showBio ?? undefined,
+        eventHostingPrefs: body.eventHostingPrefs ?? undefined,
+
+        // Lead-only fields
+        cChainAddress: body.cChainAddress ?? undefined,
+        developmentGoals: body.developmentGoals ?? undefined,
+        shippingAddress: body.shippingAddress ?? undefined,
+        merchSizes: body.merchSizes ?? undefined,
+
+        // Privacy
+        privacySettings: body.privacySettings ?? undefined,
       },
     })
 

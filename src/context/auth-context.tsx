@@ -1,13 +1,12 @@
 'use client'
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { api } from '@/lib/api-client'
 import type { AuthUser } from '@/types'
 
 interface AuthContextType {
   user: AuthUser | null
   loading: boolean
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
-  signup: (data: { email: string; password: string; confirmPassword: string; displayName: string }) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   isSuperAdmin: boolean
@@ -21,42 +20,36 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
+  const { data: session, status } = useSession()
 
   const refreshUser = useCallback(async () => {
+    // Check for NextAuth session token first
+    if (session && (session as any).accessToken) {
+      const token = (session as any).accessToken as string
+      if (!api.getToken()) {
+        api.setToken(token)
+      }
+    }
+
     const token = api.getToken()
     if (!token) { setUser(null); setLoading(false); return }
     const res = await api.get<AuthUser>('/api/auth/me')
     if (res.success && res.data) setUser(res.data)
     else { setUser(null); api.setToken(null) }
     setLoading(false)
-  }, [])
+  }, [session])
 
-  useEffect(() => { refreshUser() }, [refreshUser])
-
-  const login = async (email: string, password: string) => {
-    const res = await api.post<{ accessToken: string; user: AuthUser }>('/api/auth/login', { email, password })
-    if (res.success && res.data) {
-      api.setToken(res.data.accessToken)
-      setUser(res.data.user)
-      return { success: true }
+  useEffect(() => {
+    if (status !== 'loading') {
+      refreshUser()
     }
-    return { success: false, error: res.error || 'Login failed' }
-  }
-
-  const signup = async (data: { email: string; password: string; confirmPassword: string; displayName: string }) => {
-    const res = await api.post<{ accessToken: string; user: AuthUser }>('/api/auth/signup', data)
-    if (res.success && res.data) {
-      api.setToken(res.data.accessToken)
-      setUser(res.data.user)
-      return { success: true }
-    }
-    return { success: false, error: res.error || 'Signup failed' }
-  }
+  }, [refreshUser, status])
 
   const logout = async () => {
     await api.post('/api/auth/logout')
     api.setToken(null)
     setUser(null)
+    await nextAuthSignOut({ callbackUrl: '/login' })
   }
 
   const isSuperAdmin = !!user?.adminRole && user.adminRole.role === 'super_admin'
@@ -84,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout, refreshUser, isSuperAdmin, isRegionLead, isMember, getUserRegions }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshUser, isSuperAdmin, isRegionLead, isMember, getUserRegions }}>
       {children}
     </AuthContext.Provider>
   )

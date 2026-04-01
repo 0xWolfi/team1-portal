@@ -5,31 +5,64 @@ export interface AuthUser {
   username: string | null
   avatarUrl: string | null
   bio: string | null
-  city: string | null
+
+  // Required (always visible)
   country: string | null
-  walletAddress: string | null
   discord: string | null
   xHandle: string | null
+
+  // Location
+  city: string | null
+  state: string | null
+
+  // Personal
+  studentStatus: string | null
+  university: string | null
+  languages: string | null
+
+  // Social platforms
   telegram: string | null
   github: string | null
+  linkedin: string | null
+  instagram: string | null
+  reddit: string | null
+  arena: string | null
+  youtube: string | null
+  tiktok: string | null
+  podcast: string | null
+  blog: string | null
+  website: string | null
+
+  // Profile extras
+  walletAddress: string | null
   skills: string | null
   interests: string | null
   roles: string | null
   availability: string | null
   socialLinks: string | null
-  showEmail: boolean
-  showWallet: boolean
-  showDiscord: boolean
-  showTelegram: boolean
-  showXHandle: boolean
-  showGithub: boolean
-  showCity: boolean
-  showBio: boolean
+  eventHostingPrefs: string | null
+
+  // Lead-only fields
+  cChainAddress: string | null
+  developmentGoals: string | null
+  shippingAddress: string | null
+  merchSizes: string | null
+
+  // Privacy
+  privacySettings: string | null
+
   emailVerified: boolean
   isActive: boolean
   createdAt: string
   adminRole?: { role: string } | null
   memberships?: Membership[]
+  activities?: MemberActivity[]
+}
+
+export type PrivacyLevel = 'public' | 'members' | 'leads_only'
+
+export interface PrivacySettings {
+  [field: string]: PrivacyLevel
 }
 
 export interface Membership {
@@ -52,6 +85,26 @@ export interface Region {
   isActive: boolean
   sortOrder: number
   _count?: { memberships: number }
+}
+
+export interface MemberActivity {
+  id: string
+  userId: string
+  type: string
+  title: string
+  description: string | null
+  date: string
+  link: string | null
+  createdAt: string
+}
+
+export interface MemberRosterEntry {
+  id: string
+  email: string | null
+  xHandle: string | null
+  name: string | null
+  isUsed: boolean
+  createdAt: string
 }
 
 export interface Playbook {

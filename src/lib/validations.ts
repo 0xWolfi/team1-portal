@@ -1,16 +1,5 @@
 import { z } from 'zod'
 
-export const loginSchema = z.object({
-  email: z.string().email('Invalid email').toLowerCase().trim(),
-  password: z.string().min(1, 'Password is required'),
-})
-
-export const signupSchema = z.object({
-  email: z.string().email('Invalid email').toLowerCase().trim(),
-  password: z.string().min(8, 'Min 8 characters').regex(/[A-Z]/, 'Need one uppercase').regex(/[0-9]/, 'Need one number'),
-  confirmPassword: z.string(),
-  displayName: z.string().min(2, 'Min 2 characters').max(100),
-}).refine((d) => d.password === d.confirmPassword, { message: 'Passwords must match', path: ['confirmPassword'] })
 
 const BLOCKED_EMAIL_DOMAINS = [
   'tempmail.com', 'throwaway.email', 'guerrillamail.com', 'mailinator.com',

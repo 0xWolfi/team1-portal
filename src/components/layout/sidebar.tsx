@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Home, Users, Shield, ClipboardList, Globe, ScrollText, LogOut, ChevronDown, ChevronRight, Menu, X } from 'lucide-react'
+import { Home, Users, Shield, ClipboardList, Globe, ScrollText, LogOut, ChevronDown, ChevronRight, Menu, X, UserPlus } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { cn } from '@/lib/helpers'
 
@@ -14,6 +14,7 @@ const MEMBER_NAV = [
 const SUPER_ADMIN_NAV = [
   { label: 'Dashboard', href: '/admin', icon: Home, exact: true },
   { label: 'All Members', href: '/admin/members', icon: Users },
+  { label: 'Member Roster', href: '/admin/roster', icon: UserPlus },
   { label: 'Regions', href: '/admin/regions', icon: Globe },
   { label: 'Country Leads', href: '/admin/leads', icon: Shield },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },

@@ -14,29 +14,30 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
-    "next": "^15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "@prisma/client": "^6.2.0",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
-    "zod": "^3.24.0",
-    "framer-motion": "^11.15.0",
-    "lucide-react": "^0.468.0",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0"
+    "framer-motion": "^11.15.0",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.468.0",
+    "next": "^15.1.0",
+    "next-auth": "4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^2.6.0",
+    "zod": "^3.24.0"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
+    "@tailwindcss/postcss": "^4.0.0",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.7",
+    "postcss": "^8.4.49",
     "prisma": "^6.2.0",
-    "tsx": "^4.19.0",
     "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
-    "postcss": "^8.4.49"
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
   }
 }

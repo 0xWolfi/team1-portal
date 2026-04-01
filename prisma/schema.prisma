@@ -17,27 +17,55 @@ model User {
   username      String?  @unique
   avatarUrl     String?
   bio           String?
-  city          String?
+
+  // Required fields (visible to all)
   country       String?
-  walletAddress String?
   discord       String?
   xHandle       String?
+
+  // Location
+  city          String?
+  state         String?
+
+  // Personal
+  studentStatus String?  // "undergrad", "graduate", "not_student"
+  university    String?
+  languages     String?  // JSON array e.g. ["English","Hindi"]
+
+  // Social platforms (individual fields)
   telegram      String?
   github        String?
-  skills        String?  // JSON array stored as string
-  interests     String?  // JSON array stored as string
-  roles         String?  // JSON array stored as string
+  linkedin      String?
+  instagram     String?
+  reddit        String?
+  arena         String?
+  youtube       String?
+  tiktok        String?
+  podcast       String?
+  blog          String?
+  website       String?
+
+  // Profile extras
+  walletAddress String?
+  skills        String?  // JSON array
+  interests     String?  // JSON array
+  roles         String?  // JSON array
   availability  String?  // e.g., "Open to Hack", "Just Exploring"
-  socialLinks   String?  // JSON array of {name, url}
-  // Privacy settings - what to show other members
-  showEmail     Boolean  @default(false)
-  showWallet    Boolean  @default(false)
-  showDiscord   Boolean  @default(true)
-  showTelegram  Boolean  @default(true)
-  showXHandle   Boolean  @default(true)
-  showGithub    Boolean  @default(true)
-  showCity      Boolean  @default(true)
-  showBio       Boolean  @default(true)
+  socialLinks   String?  // JSON array of {name, url} for any custom links
+  eventHostingPrefs String? // JSON array e.g. ["Meetup","Workshop","Hackathon"]
+
+  // Lead-only fields (only visible to Global/Region Leads)
+  cChainAddress    String?
+  developmentGoals String?  @db.Text
+  shippingAddress  String?  @db.Text
+  merchSizes       String?  // JSON e.g. {"tshirt":"L","hoodie":"XL"}
+
+  // Privacy: JSON object mapping field name -> "public" | "members" | "leads_only"
+  // e.g. {"city":"public","email":"members","telegram":"leads_only"}
+  // Required fields (country, discord, xHandle) are always public
+  // Lead-only fields are always leads_only
+  privacySettings String?
+
   emailVerified Boolean  @default(false)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -52,6 +80,7 @@ model User {
   announcements Announcement[]
   notifications Notification[]
   auditLogs     AuditLog[]
+  activities    MemberActivity[]
 
   @@map("portal_users")
 }
@@ -68,6 +97,38 @@ model AuthSession {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("portal_auth_sessions")
+}
+
+// ─── Member Roster (import whitelist) ───────────────────
+
+model MemberRoster {
+  id        String   @id @default(cuid())
+  email     String?
+  xHandle   String?
+  name      String?
+  addedById String?
+  isUsed    Boolean  @default(false) // marked true once user signs up
+  createdAt DateTime @default(now())
+
+  @@unique([email])
+  @@map("portal_member_roster")
+}
+
+// ─── Member Activities ──────────────────────────────────
+
+model MemberActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   // "organized_event", "attended_event", "submitted_pr", "created_content", "other"
+  title       String
+  description String?
+  date        DateTime
+  link        String?
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portal_member_activities")
 }
 
 // ─── Regions ────────────────────────────────────────────
@@ -117,29 +178,21 @@ model UserRegionMembership {
 
 model MembershipApplication {
   id              String   @id @default(cuid())
-  // Q1: What should we call you?
   fullName        String
   email           String   @unique
   discord         String
   xHandle         String
   telegram        String?
   github          String?
-  // Q2: Where are you based?
   country         String
   city            String?
-  // Q3: Interests (comma-separated)
   interests       String?
   interestsOther  String?
-  // Q4: Avalanche familiarity
   familiarity     String?
-  // Q5: What excites you
   excitement      String?
-  // Q6: Link + context
   portfolioLink   String?
   portfolioContext String?
-  // Q7: Time commitment
   timeCommitment  String?
-  // Q8: Anything else
   anythingElse    String?
 
   status          String   @default("pending")
