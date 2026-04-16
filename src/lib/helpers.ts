@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Required profile fields — must all be filled for a profile to be considered complete.
+// Keep in sync with the fields marked with `*` in profile/settings/page.tsx.
+export const REQUIRED_PROFILE_FIELDS = ['displayName', 'country', 'discord', 'xHandle'] as const
+
+export function isProfileComplete(u: {
+  displayName?: string | null
+  country?: string | null
+  discord?: string | null
+  xHandle?: string | null
+} | null | undefined): boolean {
+  if (!u) return false
+  return REQUIRED_PROFILE_FIELDS.every((f) => {
+    const v = u[f as keyof typeof u]
+    return typeof v === 'string' && v.trim().length > 0
+  })
+}
+
 export function formatDate(date: string | Date) {
   return new Date(date).toLocaleDateString('en-US', {
     month: 'short',

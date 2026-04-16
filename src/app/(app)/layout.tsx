@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { AuthGuard } from '@/components/layout/auth-guard'
 import { Sidebar } from '@/components/layout/sidebar'
+import { ProfileCompletionBanner } from '@/components/layout/profile-completion-banner'
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -28,6 +29,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Main Content */}
         <div className="lg:pl-[260px] flex flex-col min-h-[100svh]">
           <main className="flex-1 relative z-10 px-5 md:px-8 lg:px-10 py-6 lg:py-8">
+            <ProfileCompletionBanner />
             {children}
           </main>
         </div>

@@ -20,8 +20,9 @@ async function main() {
   await prisma.region.deleteMany()
   await prisma.memberRoster.deleteMany()
 
-  // Create regions
+  // Create regions (Global first, then country regions)
   const regions = await Promise.all([
+    prisma.region.create({ data: { name: 'Global', slug: 'global', country: null, description: 'Default region for members whose country has not been set.', isActive: true, sortOrder: 0 } }),
     prisma.region.create({ data: { name: 'India', slug: 'india', country: 'India', description: 'Indian Avalanche community hub covering all states.', isActive: true, sortOrder: 1 } }),
     prisma.region.create({ data: { name: 'United States', slug: 'united-states', country: 'United States', description: 'US Avalanche community across all states.', isActive: true, sortOrder: 2 } }),
     prisma.region.create({ data: { name: 'Nigeria', slug: 'nigeria', country: 'Nigeria', description: 'Nigerian Avalanche community hub.', isActive: true, sortOrder: 3 } }),
@@ -30,14 +31,10 @@ async function main() {
     prisma.region.create({ data: { name: 'Brazil', slug: 'brazil', country: 'Brazil', description: 'Brazilian Avalanche community hub.', isActive: true, sortOrder: 6 } }),
   ])
 
-  // Super Admins
+  // Super Admins — ONLY these two
   const adminEmails = [
     { email: 'sarnavo@team1.network', name: 'Sarnavo', username: 'sarnavo' },
-    { email: 'systum877@gmail.com', name: 'Systum', username: 'systum' },
-    { email: 'armin@team1.network', name: 'Armin', username: 'armin' },
-    { email: 'ellio@team1.network', name: 'Ellio', username: 'ellio' },
-    { email: 'antoine@team1.network', name: 'Antoine', username: 'antoine' },
-    { email: 'luke@team1.network', name: 'Luke', username: 'luke' },
+    { email: 'abhishektripathi8774@gmail.com', name: 'Abhishek Tripathi', username: 'abhishek' },
   ]
 
   for (const admin of adminEmails) {
@@ -51,7 +48,7 @@ async function main() {
     })
     await prisma.platformAdmin.create({ data: { userId: user.id, role: 'super_admin' } })
 
-    // Give super admin membership to all regions as lead
+    // Give super admin membership to every region as lead (Global as primary)
     await prisma.userRegionMembership.createMany({
       data: regions.map((r, i) => ({
         userId: user.id, regionId: r.id, role: 'lead' as const, status: 'accepted' as const, isPrimary: i === 0,
@@ -59,7 +56,7 @@ async function main() {
     })
   }
 
-  // Add all admins to roster
+  // Roster (also only the two superadmins — used for non-team1.network whitelisting)
   await prisma.memberRoster.createMany({
     data: adminEmails.map((a) => ({ email: a.email, name: a.name, isUsed: true })),
   })
@@ -70,8 +67,7 @@ async function main() {
   console.log('─────────────────────────────────────────')
   adminEmails.forEach((a) => console.log(`  ${a.email}`))
   console.log('')
-  console.log('All have full super_admin access + lead on all regions.')
-  console.log('All @team1.network emails are auto-whitelisted at login.')
+  console.log('All @team1.network emails are auto-whitelisted at login and land in the Global region as members.')
 }
 
 main()

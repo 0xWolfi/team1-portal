@@ -20,9 +20,9 @@ export const authOptions: NextAuthOptions = {
       const existingUser = await prisma.user.findUnique({ where: { email } })
       if (existingUser) return true
 
-      // Auto-whitelist all @team1.network emails
+      // Auto-whitelist all @team1.network emails — land them in Global as members
       if (email.endsWith('@team1.network')) {
-        await prisma.user.create({
+        const newUser = await prisma.user.create({
           data: {
             email,
             displayName: user.name || email.split('@')[0],
@@ -30,6 +30,18 @@ export const authOptions: NextAuthOptions = {
             emailVerified: true,
           },
         })
+        const globalRegion = await prisma.region.findUnique({ where: { slug: 'global' } })
+        if (globalRegion) {
+          await prisma.userRegionMembership.create({
+            data: {
+              userId: newUser.id,
+              regionId: globalRegion.id,
+              role: 'member',
+              status: 'accepted',
+              isPrimary: true,
+            },
+          })
+        }
         return true
       }
 

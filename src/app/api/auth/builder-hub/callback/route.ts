@@ -92,9 +92,24 @@ export async function GET(request: Request) {
     // If not in DB, check whitelist / roster
     if (!user) {
       if (email.endsWith('@team1.network')) {
-        // Auto-whitelist all @team1.network emails
-        user = await prisma.user.create({
+        // Auto-whitelist all @team1.network emails — land them in Global as members
+        const created = await prisma.user.create({
           data: { email, displayName: name, emailVerified: true },
+        })
+        const globalRegion = await prisma.region.findUnique({ where: { slug: 'global' } })
+        if (globalRegion) {
+          await prisma.userRegionMembership.create({
+            data: {
+              userId: created.id,
+              regionId: globalRegion.id,
+              role: 'member',
+              status: 'accepted',
+              isPrimary: true,
+            },
+          })
+        }
+        user = await prisma.user.findUnique({
+          where: { id: created.id },
           include: {
             adminRole: true,
             memberships: { where: { status: 'accepted' }, include: { region: true } },
@@ -126,7 +141,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (!user.isActive) {
+    if (!user || !user.isActive) {
       return NextResponse.redirect(new URL('/login?error=account_deactivated', baseUrl))
     }
 
