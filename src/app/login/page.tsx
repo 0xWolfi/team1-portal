@@ -1,24 +1,22 @@
 'use client'
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import Link from 'next/link'
 import { signIn } from 'next-auth/react'
 import { useAuth } from '@/context/auth-context'
-import { api } from '@/lib/api-client'
 
 export default function LoginPage() {
   return <Suspense><LoginContent /></Suspense>
 }
 
 function LoginContent() {
-  const { user, loading, refreshUser } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirect = searchParams.get('redirect') || '/dashboard'
 
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [bhLoading, setBhLoading] = useState(false)
+  const [showApplyNotice, setShowApplyNotice] = useState(false)
 
   useEffect(() => {
     if (!loading && user) router.push(redirect)
@@ -28,36 +26,9 @@ function LoginContent() {
   useEffect(() => {
     const errParam = searchParams.get('error')
     if (errParam === 'not_in_roster') {
-      setError('Your email is not in the member roster. Please contact an admin or apply for membership.')
-    } else if (errParam === 'builder_hub_not_configured') {
-      setError('Builder Hub login is not configured yet.')
-    } else if (errParam === 'builder_hub_denied') {
-      setError('Builder Hub login was cancelled.')
-    } else if (errParam && errParam.startsWith('builder_hub')) {
-      setError('Builder Hub login failed. Please try again.')
+      setError('Your email is not in the member roster. Please contact an admin.')
     }
   }, [searchParams])
-
-  // Listen for Builder Hub popup message
-  const handleBHMessage = useCallback(async (event: MessageEvent) => {
-    if (event.origin !== window.location.origin) return
-    if (event.data?.type !== 'BUILDER_HUB_AUTH') return
-
-    const { accessToken } = event.data
-    if (!accessToken) return
-
-    setBhLoading(true)
-    setError('')
-    api.setToken(accessToken)
-    await refreshUser()
-    router.push(redirect)
-    setBhLoading(false)
-  }, [redirect, refreshUser, router])
-
-  useEffect(() => {
-    window.addEventListener('message', handleBHMessage)
-    return () => window.removeEventListener('message', handleBHMessage)
-  }, [handleBHMessage])
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true)
@@ -68,19 +39,6 @@ function LoginContent() {
       setError('Google sign-in failed')
       setGoogleLoading(false)
     }
-  }
-
-  const openBuilderHub = () => {
-    const width = 500
-    const height = 650
-    const left = window.screenX + (window.outerWidth - width) / 2
-    const top = window.screenY + (window.outerHeight - height) / 2
-
-    window.open(
-      '/auth/builder-hub',
-      'BuilderHub',
-      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
-    )
   }
 
   if (loading || user) return null
@@ -122,36 +80,20 @@ function LoginContent() {
           )}
         </button>
 
-        <div className="flex items-center gap-3 my-6">
-          <div className="flex-1 h-px bg-white/[0.06]" />
-          <span className="text-xs text-zinc-600">OR</span>
-          <div className="flex-1 h-px bg-white/[0.06]" />
-        </div>
-
-        {/* Builder Hub */}
-        <button
-          onClick={openBuilderHub}
-          disabled={bhLoading}
-          className="w-full border border-white/10 text-zinc-300 hover:text-white hover:bg-white/5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
-        >
-          {bhLoading ? (
-            <>
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
-              Connecting...
-            </>
-          ) : (
-            <>
-              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-              Continue with Builder Hub
-            </>
-          )}
-        </button>
-
         <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
           <p className="text-sm text-zinc-500 mb-3">Not a member yet?</p>
-          <Link href="/apply" className="inline-block w-full border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 py-2.5 rounded-xl text-sm font-medium transition-all text-center">
+          <button
+            type="button"
+            onClick={() => setShowApplyNotice(true)}
+            className="w-full border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 py-2.5 rounded-xl text-sm font-medium transition-all text-center cursor-pointer"
+          >
             Apply for Membership
-          </Link>
+          </button>
+          {showApplyNotice && (
+            <p className="mt-3 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+              Membership applications are coming soon. Please check back later.
+            </p>
+          )}
         </div>
 
         <p className="text-center text-[10px] text-zinc-700 mt-8">&copy; {new Date().getFullYear()} team1. All rights reserved.</p>

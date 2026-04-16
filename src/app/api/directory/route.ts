@@ -2,6 +2,14 @@ import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { filterProfileByPrivacy, type ViewerContext } from '@/lib/privacy'
 
+/**
+ * GET /api/directory
+ *
+ * Returns one entry per user (deduplicated across region memberships), shaped
+ * as `{ id, role, user: {...fields}, region: {name, slug} }` to stay
+ * compatible with the existing /directory UI. Per-field privacy is enforced
+ * on `user` relative to the viewer.
+ */
 export async function GET(request: Request) {
   try {
     const viewer = await getUserFromRequest(request)
@@ -28,109 +36,69 @@ export async function GET(request: Request) {
       }
     }
 
-    const members = await prisma.userRegionMembership.findMany({
+    const memberships = await prisma.userRegionMembership.findMany({
       where,
       include: {
-        user: {
-          select: {
-            id: true,
-            displayName: true,
-            username: true,
-            avatarUrl: true,
-            bio: true,
-            title: true,
-            email: true,
-            // Required (always public)
-            country: true,
-            discord: true,
-            xHandle: true,
-            // Location
-            city: true,
-            state: true,
-            // Personal
-            studentStatus: true,
-            university: true,
-            languages: true,
-            cohort: true,
-            // Social
-            telegram: true,
-            inRegionalTg: true,
-            github: true,
-            linkedin: true,
-            instagram: true,
-            reddit: true,
-            arena: true,
-            youtube: true,
-            tiktok: true,
-            twitch: true,
-            farcaster: true,
-            linktree: true,
-            podcast: true,
-            blog: true,
-            website: true,
-            buildersHub: true,
-            // Profile extras
-            walletAddress: true,
-            skills: true,
-            interests: true,
-            roles: true,
-            availability: true,
-            socialLinks: true,
-            eventHostingPrefs: true,
-            // Lead-only
-            cChainAddress: true,
-            developmentGoals: true,
-            shippingAddress: true,
-            merchSizes: true,
-            unisexTshirtSize: true,
-            unisexHoodieSize: true,
-            unisexPantsSize: true,
-            womensTshirtSize: true,
-            womensHoodieSize: true,
-            womensPantsSize: true,
-            // Status / admin
-            status: true,
-            adminNotes: true,
-            // Privacy
-            privacySettings: true,
-          },
-        },
+        user: true, // pull all user fields; we filter via privacy helper below
         region: { select: { id: true, name: true, slug: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    // Group by user so each user appears once with their full region list
-    const grouped = new Map<string, { user: typeof members[number]['user']; regions: { id: string; name: string; slug: string }[] }>()
-    for (const m of members) {
-      const existing = grouped.get(m.userId)
-      if (existing) {
-        existing.regions.push(m.region)
-      } else {
-        grouped.set(m.userId, { user: m.user, regions: [m.region] })
-      }
+    // Gather each user's full region list for lead-overlap checks.
+    const userIds = Array.from(new Set(memberships.map((m) => m.userId)))
+    const allForUsers = userIds.length > 0
+      ? await prisma.userRegionMembership.findMany({
+          where: { userId: { in: userIds }, status: 'accepted' },
+          select: { userId: true, region: { select: { slug: true } } },
+        })
+      : []
+    const regionsByUser = new Map<string, string[]>()
+    for (const row of allForUsers) {
+      const list = regionsByUser.get(row.userId) ?? []
+      list.push(row.region.slug)
+      regionsByUser.set(row.userId, list)
     }
 
-    // Pre-compute viewer flags
     const isAdmin = !!viewer.adminRole && viewer.adminRole.role === 'super_admin'
     const leadRegionSlugs = (viewer.memberships || [])
       .filter((m) => m.role === 'lead' || m.role === 'co_lead')
       .map((m) => m.region.slug)
 
-    const out = Array.from(grouped.values()).map(({ user, regions }) => {
-      const targetRegionSlugs = regions.map((r) => r.slug)
+    // Deduplicate by userId (old behaviour) and attach privacy-filtered user.
+    const seen = new Set<string>()
+    const result: Array<{
+      id: string
+      role: string
+      user: Record<string, unknown>
+      region: { id: string; name: string; slug: string }
+    }> = []
+
+    for (const m of memberships) {
+      if (seen.has(m.userId)) continue
+      seen.add(m.userId)
+
       const ctx: ViewerContext = {
         viewerId: viewer.id,
         isMember: true,
         isAdmin,
         leadRegionSlugs,
-        targetRegionSlugs,
+        targetRegionSlugs: regionsByUser.get(m.userId) ?? [],
       }
-      const safeUser = filterProfileByPrivacy(user as unknown as Record<string, unknown> & { id: string; privacySettings: string | null }, ctx)
-      return { ...safeUser, regions }
-    })
 
-    return apiSuccess(out)
+      // Strip sensitive columns we never want to ship to the client at all.
+      const { passwordHash: _pw, ...userRow } = m.user as unknown as Record<string, unknown> & { passwordHash?: string; id: string; privacySettings: string | null }
+      const safeUser = filterProfileByPrivacy(userRow, ctx)
+
+      result.push({
+        id: m.id,
+        role: m.role,
+        user: safeUser,
+        region: m.region,
+      })
+    }
+
+    return apiSuccess(result)
   } catch (e) {
     console.error('Directory error:', e)
     return apiError('Internal server error', 500)

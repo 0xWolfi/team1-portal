@@ -4,20 +4,24 @@ import { useApi } from '@/hooks/use-api'
 import { Users, Globe, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import type { Region } from '@/types'
+import { AddActivityButton } from '@/components/dashboard/add-activity-button'
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { data: regions } = useApi<Region[]>('/api/regions')
   const regionCount = user?.memberships?.length || 0
 
   return (
     <div className="space-y-10">
       {/* Welcome */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          Welcome back, <span className="text-brand-500">{user?.displayName?.split(' ')[0]}</span>
-        </h1>
-        <p className="text-sm text-zinc-400 mt-1">team1 Member Portal</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-white">
+            Welcome back, <span className="text-brand-500">{user?.displayName?.split(' ')[0]}</span>
+          </h1>
+          <p className="text-sm text-zinc-400 mt-1">team1 Member Portal</p>
+        </div>
+        <AddActivityButton onCreated={() => refreshUser()} />
       </div>
 
       {/* Stats */}
