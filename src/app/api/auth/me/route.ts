@@ -1,5 +1,25 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { recordAudit, getRequestIp } from '@/lib/audit'
+
+// Fields the user themselves can edit on their own profile.
+const SELF_EDITABLE_FIELDS = [
+  'displayName', 'username', 'bio', 'title',
+  'country', 'discord', 'xHandle',
+  'city', 'state',
+  'studentStatus', 'university', 'languages', 'cohort',
+  'telegram', 'github', 'linkedin', 'instagram', 'reddit',
+  'arena', 'youtube', 'tiktok', 'twitch', 'farcaster', 'linktree',
+  'podcast', 'blog', 'website', 'buildersHub',
+  'walletAddress', 'skills', 'interests', 'roles', 'availability',
+  'socialLinks', 'eventHostingPrefs',
+  'cChainAddress', 'developmentGoals', 'shippingAddress', 'merchSizes',
+  'unisexTshirtSize', 'unisexHoodieSize', 'unisexPantsSize',
+  'womensTshirtSize', 'womensHoodieSize', 'womensPantsSize',
+  'privacySettings',
+] as const
+
+type SelfEditable = typeof SELF_EDITABLE_FIELDS[number]
 
 export async function GET(request: Request) {
   try {
@@ -19,6 +39,7 @@ export async function GET(request: Request) {
       username: user.username,
       avatarUrl: user.avatarUrl,
       bio: user.bio,
+      title: user.title,
 
       // Required fields
       country: user.country,
@@ -33,9 +54,11 @@ export async function GET(request: Request) {
       studentStatus: user.studentStatus,
       university: user.university,
       languages: user.languages,
+      cohort: user.cohort,
 
       // Social platforms
       telegram: user.telegram,
+      inRegionalTg: user.inRegionalTg,
       github: user.github,
       linkedin: user.linkedin,
       instagram: user.instagram,
@@ -43,9 +66,13 @@ export async function GET(request: Request) {
       arena: user.arena,
       youtube: user.youtube,
       tiktok: user.tiktok,
+      twitch: user.twitch,
+      farcaster: user.farcaster,
+      linktree: user.linktree,
       podcast: user.podcast,
       blog: user.blog,
       website: user.website,
+      buildersHub: user.buildersHub,
 
       // Profile extras
       walletAddress: user.walletAddress,
@@ -61,6 +88,16 @@ export async function GET(request: Request) {
       developmentGoals: user.developmentGoals,
       shippingAddress: user.shippingAddress,
       merchSizes: user.merchSizes,
+      unisexTshirtSize: user.unisexTshirtSize,
+      unisexHoodieSize: user.unisexHoodieSize,
+      unisexPantsSize: user.unisexPantsSize,
+      womensTshirtSize: user.womensTshirtSize,
+      womensHoodieSize: user.womensHoodieSize,
+      womensPantsSize: user.womensPantsSize,
+
+      // Status / admin
+      status: user.status,
+      adminNotes: user.adminNotes,
 
       // Privacy
       privacySettings: user.privacySettings,
@@ -81,10 +118,14 @@ export async function GET(request: Request) {
         id: a.id,
         userId: a.userId,
         type: a.type,
+        typeOther: a.typeOther,
         title: a.title,
         description: a.description,
         date: a.date.toISOString(),
         link: a.link,
+        source: a.source,
+        visibility: a.visibility,
+        includeInReport: a.includeInReport,
         createdAt: a.createdAt.toISOString(),
       })),
     })
@@ -111,58 +152,42 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Only persist fields the user is allowed to edit on their own profile.
+    // (Status, adminNotes, inRegionalTg are admin-only — never written here.)
+    const data: Record<string, unknown> = {}
+    const before: Record<string, unknown> = {}
+    for (const key of SELF_EDITABLE_FIELDS) {
+      if (body[key] !== undefined) {
+        data[key] = body[key] === '' ? null : body[key]
+        before[key] = (user as unknown as Record<string, unknown>)[key as SelfEditable]
+      }
+    }
+    // cohort comes in as a number — coerce safely
+    if (data.cohort !== undefined && data.cohort !== null) {
+      const n = typeof data.cohort === 'string' ? parseInt(data.cohort, 10) : Number(data.cohort)
+      data.cohort = Number.isFinite(n) ? n : null
+    }
+
     const updated = await prisma.user.update({
       where: { id: user.id },
-      data: {
-        displayName: body.displayName ?? undefined,
-        username: body.username ?? undefined,
-        bio: body.bio ?? undefined,
+      data,
+    })
 
-        // Required fields
-        country: body.country ?? undefined,
-        discord: body.discord ?? undefined,
-        xHandle: body.xHandle ?? undefined,
-
-        // Location
-        city: body.city ?? undefined,
-        state: body.state ?? undefined,
-
-        // Personal
-        studentStatus: body.studentStatus ?? undefined,
-        university: body.university ?? undefined,
-        languages: body.languages ?? undefined,
-
-        // Social platforms
-        telegram: body.telegram ?? undefined,
-        github: body.github ?? undefined,
-        linkedin: body.linkedin ?? undefined,
-        instagram: body.instagram ?? undefined,
-        reddit: body.reddit ?? undefined,
-        arena: body.arena ?? undefined,
-        youtube: body.youtube ?? undefined,
-        tiktok: body.tiktok ?? undefined,
-        podcast: body.podcast ?? undefined,
-        blog: body.blog ?? undefined,
-        website: body.website ?? undefined,
-
-        // Profile extras
-        walletAddress: body.walletAddress ?? undefined,
-        skills: body.skills ?? undefined,
-        interests: body.interests ?? undefined,
-        roles: body.roles ?? undefined,
-        availability: body.availability ?? undefined,
-        socialLinks: body.socialLinks ?? undefined,
-        eventHostingPrefs: body.eventHostingPrefs ?? undefined,
-
-        // Lead-only fields
-        cChainAddress: body.cChainAddress ?? undefined,
-        developmentGoals: body.developmentGoals ?? undefined,
-        shippingAddress: body.shippingAddress ?? undefined,
-        merchSizes: body.merchSizes ?? undefined,
-
-        // Privacy
-        privacySettings: body.privacySettings ?? undefined,
-      },
+    // Audit (non-blocking)
+    const after: Record<string, unknown> = {}
+    for (const key of Object.keys(data)) {
+      after[key] = (updated as unknown as Record<string, unknown>)[key]
+    }
+    await recordAudit({
+      userId: user.id,
+      action: 'update',
+      module: 'profile',
+      entityType: 'User',
+      entityId: user.id,
+      details: 'Self profile update',
+      before,
+      after,
+      ipAddress: getRequestIp(request),
     })
 
     return apiSuccess(updated)

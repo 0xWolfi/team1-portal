@@ -11,11 +11,22 @@ export async function GET(request: Request) {
 
     const { searchParams } = new URL(request.url)
     const module = searchParams.get('module')
+    const memberId = searchParams.get('memberId') // entity id for User module, or actor id
+    const entityType = searchParams.get('entityType')
+    const entityId = searchParams.get('entityId')
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = 50
 
     const where: Record<string, unknown> = {}
     if (module) where.module = module
+    if (entityType) where.entityType = entityType
+    if (entityId) where.entityId = entityId
+    if (memberId) {
+      where.OR = [
+        { entityId: memberId, entityType: 'User' },
+        { userId: memberId },
+      ]
+    }
 
     const [items, total] = await Promise.all([
       prisma.auditLog.findMany({

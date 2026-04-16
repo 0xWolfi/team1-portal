@@ -17,6 +17,7 @@ model User {
   username      String?  @unique
   avatarUrl     String?
   bio           String?
+  title         String?  // e.g. "Founder", "Builder", "DevRel"
 
   // Required fields (visible to all)
   country       String?
@@ -31,9 +32,11 @@ model User {
   studentStatus String?  // "undergrad", "graduate", "not_student"
   university    String?
   languages     String?  // JSON array e.g. ["English","Hindi"]
+  cohort        Int?     // joining cohort/batch number
 
   // Social platforms (individual fields)
   telegram      String?
+  inRegionalTg  Boolean? // is the member in the regional Telegram chat (set by leads/admin)
   github        String?
   linkedin      String?
   instagram     String?
@@ -41,9 +44,13 @@ model User {
   arena         String?
   youtube       String?
   tiktok        String?
+  twitch        String?
+  farcaster     String?
+  linktree      String?
   podcast       String?
   blog          String?
   website       String?
+  buildersHub   String?  // Builder Hub account / handle
 
   // Profile extras
   walletAddress String?
@@ -58,7 +65,19 @@ model User {
   cChainAddress    String?
   developmentGoals String?  @db.Text
   shippingAddress  String?  @db.Text
-  merchSizes       String?  // JSON e.g. {"tshirt":"L","hoodie":"XL"}
+  merchSizes       String?  // legacy unstructured JSON {"tshirt":"L","hoodie":"XL"}
+
+  // Structured merch sizes (XS–XXL)
+  unisexTshirtSize String?
+  unisexHoodieSize String?
+  unisexPantsSize  String?
+  womensTshirtSize String?
+  womensHoodieSize String?
+  womensPantsSize  String?
+
+  // Status / admin lifecycle
+  status      String   @default("active") // active, flagged, paused, inactive, removed
+  adminNotes  String?  @db.Text           // admin-only notes about this member
 
   // Privacy: JSON object mapping field name -> "public" | "members" | "leads_only"
   // e.g. {"city":"public","email":"members","telegram":"leads_only"}
@@ -81,6 +100,7 @@ model User {
   notifications Notification[]
   auditLogs     AuditLog[]
   activities    MemberActivity[]
+  roleRequests  MemberRoleRequest[]
 
   @@map("portal_users")
 }
@@ -119,15 +139,29 @@ model MemberRoster {
 model MemberActivity {
   id          String   @id @default(cuid())
   userId      String
-  type        String   // "organized_event", "attended_event", "submitted_pr", "created_content", "other"
+  type        String   // "organized_event", "attended_event", "submitted_pr", "created_content", "other", or freetext
+  typeOther   String?  // freetext when type == "other"
   title       String
   description String?
   date        DateTime
   link        String?
+
+  // Provenance: who/what created this activity entry
+  source      String   @default("manual") // "manual", "discord-bot", "github-bot", etc.
+
+  // Visibility: 0 = private/admin only, 1 = leads + admins, 2 = members, 3 = public
+  visibility  Int      @default(1)
+
+  // Whether to include in monthly/region reports
+  includeInReport Boolean @default(true)
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([source])
   @@map("portal_member_activities")
 }
 
@@ -307,19 +341,47 @@ model PlatformAdmin {
 // ─── Audit Log ──────────────────────────────────────────
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  userId     String?
-  action     String
-  module     String
-  entityType String?
-  entityId   String?
-  details    String?
-  ipAddress  String?
-  createdAt  DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String?
+  action        String
+  module        String
+  entityType    String?
+  entityId      String?
+  details       String?
+  // Before/after values — JSON-stringified diffs (only changed fields)
+  previousValue String?  @db.Text
+  newValue      String?  @db.Text
+  ipAddress     String?
+  createdAt     DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id])
 
+  @@index([entityType, entityId])
+  @@index([module])
   @@map("portal_audit_logs")
+}
+
+// ─── Member Role Requests ───────────────────────────────
+// Members can request roles (e.g. "Discord Moderator", "Workshop Organizer").
+// Admins approve or reject; on approval, the role is appended to User.roles JSON.
+
+model MemberRoleRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  role        String
+  message     String?  @db.Text  // why the member wants this role
+  status      String   @default("pending") // pending, approved, rejected
+  reviewedBy  String?
+  reviewNote  String?  @db.Text
+  reviewedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("portal_member_role_requests")
 }
 
 // ─── Notifications ──────────────────────────────────────

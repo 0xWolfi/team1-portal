@@ -1,10 +1,11 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { filterProfileByPrivacy, type ViewerContext } from '@/lib/privacy'
 
 export async function GET(request: Request) {
   try {
-    const user = await getUserFromRequest(request)
-    if (!user) return apiError('Unauthorized', 401)
+    const viewer = await getUserFromRequest(request)
+    if (!viewer) return apiError('Unauthorized', 401)
 
     const { searchParams } = new URL(request.url)
     const regionSlug = searchParams.get('region')
@@ -18,7 +19,6 @@ export async function GET(request: Request) {
 
     const where: Record<string, unknown> = { status: 'accepted' }
     if (regionId) where.regionId = regionId
-
     if (search) {
       where.user = {
         OR: [
@@ -38,6 +38,7 @@ export async function GET(request: Request) {
             username: true,
             avatarUrl: true,
             bio: true,
+            title: true,
             email: true,
             // Required (always public)
             country: true,
@@ -50,8 +51,10 @@ export async function GET(request: Request) {
             studentStatus: true,
             university: true,
             languages: true,
+            cohort: true,
             // Social
             telegram: true,
+            inRegionalTg: true,
             github: true,
             linkedin: true,
             instagram: true,
@@ -59,9 +62,13 @@ export async function GET(request: Request) {
             arena: true,
             youtube: true,
             tiktok: true,
+            twitch: true,
+            farcaster: true,
+            linktree: true,
             podcast: true,
             blog: true,
             website: true,
+            buildersHub: true,
             // Profile extras
             walletAddress: true,
             skills: true,
@@ -75,25 +82,57 @@ export async function GET(request: Request) {
             developmentGoals: true,
             shippingAddress: true,
             merchSizes: true,
+            unisexTshirtSize: true,
+            unisexHoodieSize: true,
+            unisexPantsSize: true,
+            womensTshirtSize: true,
+            womensHoodieSize: true,
+            womensPantsSize: true,
+            // Status / admin
+            status: true,
+            adminNotes: true,
             // Privacy
             privacySettings: true,
           },
         },
-        region: { select: { name: true, slug: true } },
+        region: { select: { id: true, name: true, slug: true } },
       },
       orderBy: { createdAt: 'desc' },
     })
 
-    // Deduplicate by userId
-    const seen = new Set()
-    const unique = members.filter((m) => {
-      if (seen.has(m.userId)) return false
-      seen.add(m.userId)
-      return true
+    // Group by user so each user appears once with their full region list
+    const grouped = new Map<string, { user: typeof members[number]['user']; regions: { id: string; name: string; slug: string }[] }>()
+    for (const m of members) {
+      const existing = grouped.get(m.userId)
+      if (existing) {
+        existing.regions.push(m.region)
+      } else {
+        grouped.set(m.userId, { user: m.user, regions: [m.region] })
+      }
+    }
+
+    // Pre-compute viewer flags
+    const isAdmin = !!viewer.adminRole && viewer.adminRole.role === 'super_admin'
+    const leadRegionSlugs = (viewer.memberships || [])
+      .filter((m) => m.role === 'lead' || m.role === 'co_lead')
+      .map((m) => m.region.slug)
+
+    const out = Array.from(grouped.values()).map(({ user, regions }) => {
+      const targetRegionSlugs = regions.map((r) => r.slug)
+      const ctx: ViewerContext = {
+        viewerId: viewer.id,
+        isMember: true,
+        isAdmin,
+        leadRegionSlugs,
+        targetRegionSlugs,
+      }
+      const safeUser = filterProfileByPrivacy(user as unknown as Record<string, unknown> & { id: string; privacySettings: string | null }, ctx)
+      return { ...safeUser, regions }
     })
 
-    return apiSuccess(unique)
+    return apiSuccess(out)
   } catch (e) {
+    console.error('Directory error:', e)
     return apiError('Internal server error', 500)
   }
 }

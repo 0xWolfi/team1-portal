@@ -5,6 +5,7 @@ export interface AuthUser {
   username: string | null
   avatarUrl: string | null
   bio: string | null
+  title: string | null
 
   // Required (always visible)
   country: string | null
@@ -19,9 +20,11 @@ export interface AuthUser {
   studentStatus: string | null
   university: string | null
   languages: string | null
+  cohort: number | null
 
   // Social platforms
   telegram: string | null
+  inRegionalTg: boolean | null
   github: string | null
   linkedin: string | null
   instagram: string | null
@@ -29,9 +32,13 @@ export interface AuthUser {
   arena: string | null
   youtube: string | null
   tiktok: string | null
+  twitch: string | null
+  farcaster: string | null
+  linktree: string | null
   podcast: string | null
   blog: string | null
   website: string | null
+  buildersHub: string | null
 
   // Profile extras
   walletAddress: string | null
@@ -47,6 +54,16 @@ export interface AuthUser {
   developmentGoals: string | null
   shippingAddress: string | null
   merchSizes: string | null
+  unisexTshirtSize: string | null
+  unisexHoodieSize: string | null
+  unisexPantsSize: string | null
+  womensTshirtSize: string | null
+  womensHoodieSize: string | null
+  womensPantsSize: string | null
+
+  // Status / admin
+  status: 'active' | 'flagged' | 'paused' | 'inactive' | 'removed' | string
+  adminNotes: string | null
 
   // Privacy
   privacySettings: string | null
@@ -57,6 +74,20 @@ export interface AuthUser {
   adminRole?: { role: string } | null
   memberships?: Membership[]
   activities?: MemberActivity[]
+}
+
+export interface MemberRoleRequest {
+  id: string
+  userId: string
+  role: string
+  message: string | null
+  status: 'pending' | 'approved' | 'rejected' | string
+  reviewedBy: string | null
+  reviewNote: string | null
+  reviewedAt: string | null
+  createdAt: string
+  updatedAt: string
+  user?: { id: string; displayName: string; email: string; avatarUrl: string | null }
 }
 
 export type PrivacyLevel = 'public' | 'members' | 'leads_only'
@@ -91,10 +122,14 @@ export interface MemberActivity {
   id: string
   userId: string
   type: string
+  typeOther?: string | null
   title: string
   description: string | null
   date: string
   link: string | null
+  source?: string
+  visibility?: number
+  includeInReport?: boolean
   createdAt: string
 }
 
@@ -217,6 +252,8 @@ export interface AuditLogEntry {
   entityType: string | null
   entityId: string | null
   details: string | null
+  previousValue: string | null
+  newValue: string | null
   ipAddress: string | null
   createdAt: string
   user?: { displayName: string; email: string } | null
