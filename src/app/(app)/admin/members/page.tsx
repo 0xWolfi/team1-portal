@@ -14,13 +14,22 @@ import { PageLoader } from '@/components/ui/spinner'
 import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
 import type { Region } from '@/types'
 
+interface MembershipItem {
+  id: string
+  role: string
+  status: string
+  isPrimary: boolean
+  createdAt: string
+  region: { id: string; name: string; slug: string }
+}
+
 interface MemberEntry {
   id: string
   role: string
   status: string
   createdAt: string
   user: { id: string; email: string; displayName: string; username: string | null; avatarUrl: string | null; bio?: string | null; createdAt?: string }
-  region: { id: string; name: string; slug: string }
+  memberships: MembershipItem[]
 }
 
 export default function AdminMembersPage() {
@@ -41,8 +50,8 @@ export default function AdminMembersPage() {
   // View member detail state
   const [selectedMember, setSelectedMember] = useState<MemberEntry | null>(null)
 
-  // Delete confirm state
-  const [deleteTarget, setDeleteTarget] = useState<MemberEntry | null>(null)
+  // Delete confirm state (removing a single membership)
+  const [deleteTarget, setDeleteTarget] = useState<{ member: MemberEntry; membership: MembershipItem } | null>(null)
 
   const handleAddMember = async () => {
     if (!addForm.email || !addForm.regionId) {
@@ -62,13 +71,22 @@ export default function AdminMembersPage() {
 
   const handleRemoveMember = async () => {
     if (!deleteTarget) return
-    const res = await mutate(`/api/admin/members/${deleteTarget.id}`, 'DELETE')
+    const res = await mutate(`/api/admin/members/${deleteTarget.membership.id}`, 'DELETE')
     if (res.success) {
-      success('Member removed successfully')
+      success('Membership removed successfully')
+      // If we're viewing this member in detail, refresh their membership list locally
+      if (selectedMember && selectedMember.user.id === deleteTarget.member.user.id) {
+        const remaining = selectedMember.memberships.filter((mm) => mm.id !== deleteTarget.membership.id)
+        if (remaining.length === 0) {
+          setSelectedMember(null)
+        } else {
+          setSelectedMember({ ...selectedMember, memberships: remaining })
+        }
+      }
       setDeleteTarget(null)
       refetch()
     } else {
-      showError(res.error || 'Failed to remove member')
+      showError(res.error || 'Failed to remove membership')
     }
   }
 
@@ -96,31 +114,44 @@ export default function AdminMembersPage() {
       {loading ? <PageLoader /> : (
         <Card className="overflow-hidden p-0">
           <div className="divide-y divide-zinc-700/50">
-            {result?.items.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center gap-3 px-5 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer group"
-                onClick={() => setSelectedMember(m)}
-              >
-                <Avatar src={m.user.avatarUrl} name={m.user.displayName} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white truncate">{m.user.displayName}</p>
-                  <p className="text-xs text-zinc-400 truncate">{m.user.email}</p>
-                </div>
-                <Badge variant="info">{m.region.name}</Badge>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(m.role)}`}>
-                  {m.role === 'co_lead' ? 'Co-Lead' : m.role.charAt(0).toUpperCase() + m.role.slice(1)}
-                </span>
-                <span className="text-[10px] text-zinc-500">{formatDate(m.createdAt)}</span>
-                <button
-                  onClick={(e) => { e.stopPropagation(); setDeleteTarget(m) }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400"
-                  title="Remove member"
+            {result?.items.map((m) => {
+              const visibleRegions = m.memberships.slice(0, 3)
+              const extraCount = m.memberships.length - visibleRegions.length
+              const topRole = m.memberships.find((x) => x.role === 'lead')?.role
+                || m.memberships.find((x) => x.role === 'co_lead')?.role
+                || m.memberships[0]?.role
+                || m.role
+              return (
+                <div
+                  key={m.user.id}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-zinc-800/50 transition-colors cursor-pointer group"
+                  onClick={() => setSelectedMember(m)}
                 >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
+                  <Avatar src={m.user.avatarUrl} name={m.user.displayName} size="sm" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white truncate">{m.user.displayName}</p>
+                    <p className="text-xs text-zinc-400 truncate">{m.user.email}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {visibleRegions.map((mm) => (
+                      <Badge key={mm.id} variant="info">{mm.region.name}</Badge>
+                    ))}
+                    {extraCount > 0 && (
+                      <span
+                        className="text-[10px] px-2 py-0.5 rounded-full border border-white/10 bg-zinc-800/60 text-zinc-300"
+                        title={m.memberships.slice(3).map((mm) => mm.region.name).join(', ')}
+                      >
+                        +{extraCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(topRole)}`}>
+                    {topRole === 'co_lead' ? 'Co-Lead' : topRole.charAt(0).toUpperCase() + topRole.slice(1)}
+                  </span>
+                  <span className="text-[10px] text-zinc-500">{formatDate(m.createdAt)}</span>
+                </div>
+              )
+            })}
             {result?.items.length === 0 && <div className="py-12 text-center text-sm text-zinc-500">No members found</div>}
           </div>
         </Card>
@@ -208,16 +239,6 @@ export default function AdminMembersPage() {
                     <span className="text-sm text-zinc-300">{selectedMember.user.email}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-xs text-zinc-500">Region</span>
-                    <Badge variant="info">{selectedMember.region.name}</Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-zinc-500">Role</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(selectedMember.role)}`}>
-                      {selectedMember.role === 'co_lead' ? 'Co-Lead' : selectedMember.role.charAt(0).toUpperCase() + selectedMember.role.slice(1)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
                     <span className="text-xs text-zinc-500">Joined</span>
                     <span className="text-sm text-zinc-300">{formatDate(selectedMember.createdAt)}</span>
                   </div>
@@ -229,22 +250,40 @@ export default function AdminMembersPage() {
                   )}
                 </div>
 
+                <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs text-zinc-500">Regions & Roles</p>
+                    <span className="text-[10px] text-zinc-500">{selectedMember.memberships.length} total</span>
+                  </div>
+                  <div className="space-y-2">
+                    {selectedMember.memberships.map((mm) => (
+                      <div key={mm.id} className="flex items-center gap-2">
+                        <Badge variant="info">{mm.region.name}</Badge>
+                        {mm.isPrimary && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-white/10 text-zinc-400">Primary</span>
+                        )}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(mm.role)}`}>
+                          {mm.role === 'co_lead' ? 'Co-Lead' : mm.role.charAt(0).toUpperCase() + mm.role.slice(1)}
+                        </span>
+                        <span className="ml-auto text-[10px] text-zinc-500">{formatDate(mm.createdAt)}</span>
+                        <button
+                          onClick={() => setDeleteTarget({ member: selectedMember, membership: mm })}
+                          className="p-1.5 rounded-lg hover:bg-red-500/10 text-zinc-500 hover:text-red-400 transition-colors"
+                          title={`Remove from ${mm.region.name}`}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {selectedMember.user.bio && (
                   <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4">
                     <p className="text-xs text-zinc-500 mb-2">Bio</p>
                     <p className="text-sm text-zinc-300 leading-relaxed">{selectedMember.user.bio}</p>
                   </div>
                 )}
-
-                <div className="pt-2">
-                  <Button
-                    variant="ghost"
-                    className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                    onClick={() => { setSelectedMember(null); setDeleteTarget(selectedMember) }}
-                  >
-                    <Trash2 size={14} /> Remove Member
-                  </Button>
-                </div>
               </div>
             </motion.div>
           </div>
@@ -252,10 +291,10 @@ export default function AdminMembersPage() {
       </AnimatePresence>
 
       {/* Delete Confirmation Modal */}
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Member" size="sm">
+      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Membership" size="sm">
         <div className="space-y-4">
           <p className="text-sm text-zinc-300">
-            Are you sure you want to remove <span className="text-white font-medium">{deleteTarget?.user.displayName}</span> from <span className="text-white font-medium">{deleteTarget?.region.name}</span>? This will revoke their membership access.
+            Are you sure you want to remove <span className="text-white font-medium">{deleteTarget?.member.user.displayName}</span> from <span className="text-white font-medium">{deleteTarget?.membership.region.name}</span>? This will revoke their membership access in that region.
           </p>
           <div className="flex justify-end gap-3">
             <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>

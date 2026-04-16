@@ -15,31 +15,65 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = 20
 
-    const where: Record<string, unknown> = { status: 'accepted' }
-    if (regionId) where.regionId = regionId
+    const userWhere: Record<string, unknown> = {
+      memberships: {
+        some: {
+          status: 'accepted',
+          ...(regionId ? { regionId } : {}),
+        },
+      },
+    }
     if (search) {
-      where.user = {
-        OR: [
-          { displayName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { username: { contains: search, mode: 'insensitive' } },
-        ],
-      }
+      userWhere.OR = [
+        { displayName: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ]
     }
 
-    const [items, total] = await Promise.all([
-      prisma.userRegionMembership.findMany({
-        where,
-        include: {
-          user: { select: { id: true, email: true, displayName: true, username: true, avatarUrl: true, bio: true, createdAt: true } },
-          region: { select: { id: true, name: true, slug: true } },
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where: userWhere,
+        select: {
+          id: true,
+          email: true,
+          displayName: true,
+          username: true,
+          avatarUrl: true,
+          bio: true,
+          createdAt: true,
+          memberships: {
+            where: { status: 'accepted' },
+            select: {
+              id: true,
+              role: true,
+              status: true,
+              isPrimary: true,
+              createdAt: true,
+              region: { select: { id: true, name: true, slug: true } },
+            },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
-      prisma.userRegionMembership.count({ where }),
+      prisma.user.count({ where: userWhere }),
     ])
+
+    const items = users.map((u) => {
+      const { memberships, ...userFields } = u
+      const primary = memberships[0]
+      return {
+        id: primary?.id ?? u.id,
+        role: primary?.role ?? 'member',
+        status: primary?.status ?? 'accepted',
+        createdAt: primary?.createdAt ?? u.createdAt,
+        user: userFields,
+        memberships,
+      }
+    })
 
     return apiSuccess({ items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })
   } catch (e) {

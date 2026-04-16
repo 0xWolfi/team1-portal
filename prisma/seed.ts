@@ -36,6 +36,8 @@ async function main() {
     { email: 'systum877@gmail.com', name: 'Systum', username: 'systum' },
     { email: 'armin@team1.network', name: 'Armin', username: 'armin' },
     { email: 'ellio@team1.network', name: 'Ellio', username: 'ellio' },
+    { email: 'antoine@team1.network', name: 'Antoine', username: 'antoine' },
+    { email: 'luke@team1.network', name: 'Luke', username: 'luke' },
   ]
 
   for (const admin of adminEmails) {
