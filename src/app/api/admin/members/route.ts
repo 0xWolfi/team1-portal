@@ -99,11 +99,21 @@ export async function POST(request: Request) {
     if (!regionId) return apiError('regionId is required', 422)
     if (!email && !userId) return apiError('email or userId is required', 422)
 
-    // Look up user by email if userId not provided
+    // Look up user by email if userId not provided; auto-create if they don't exist yet
     let targetUserId = userId
     if (email && !userId) {
-      const targetUser = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
-      if (!targetUser) return apiError('No account found with this email. The user must sign up first.', 404)
+      const normalizedEmail = email.toLowerCase().trim()
+      let targetUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+      if (!targetUser) {
+        // Auto-create the user so they can sign in later via Google
+        targetUser = await prisma.user.create({
+          data: {
+            email: normalizedEmail,
+            displayName: normalizedEmail.split('@')[0],
+            emailVerified: false,
+          },
+        })
+      }
       targetUserId = targetUser.id
     }
 

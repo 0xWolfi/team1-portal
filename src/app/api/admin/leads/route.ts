@@ -39,8 +39,17 @@ export async function POST(request: Request) {
 
     if (!email || !regionId) return apiError('Email and regionId required', 422)
 
-    const targetUser = await prisma.user.findUnique({ where: { email } })
-    if (!targetUser) return apiError('User not found with this email', 404)
+    const normalizedEmail = email.toLowerCase().trim()
+    let targetUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
+    if (!targetUser) {
+      targetUser = await prisma.user.create({
+        data: {
+          email: normalizedEmail,
+          displayName: normalizedEmail.split('@')[0],
+          emailVerified: false,
+        },
+      })
+    }
 
     // Check existing membership
     const existing = await prisma.userRegionMembership.findUnique({
