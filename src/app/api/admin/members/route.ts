@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { sendMemberAddedMail } from '@/lib/mailer'
 
 export async function GET(request: Request) {
   try {
@@ -115,6 +116,14 @@ export async function POST(request: Request) {
       data: { userId: targetUserId, regionId, role, status: 'accepted', isPrimary: false },
       include: { user: { select: { displayName: true, email: true } }, region: { select: { name: true } } },
     })
+
+    // Non-blocking: send welcome email to the added member
+    sendMemberAddedMail({
+      toEmail: membership.user.email,
+      toName: membership.user.displayName,
+      regionName: membership.region.name,
+      role,
+    }).catch(() => {})
 
     return apiSuccess(membership, 201)
   } catch (e) {

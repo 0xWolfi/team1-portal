@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { sendMemberAddedMail } from '@/lib/mailer'
 
 export async function GET(request: Request) {
   try {
@@ -61,6 +62,15 @@ export async function POST(request: Request) {
     await prisma.auditLog.create({
       data: { userId: user.id, action: 'assign_lead', module: 'leads', entityType: 'Region', entityId: regionId, details: `Assigned ${email} as ${role}` },
     })
+
+    // Non-blocking: send email to the user about their new role
+    const region = await prisma.region.findUnique({ where: { id: regionId }, select: { name: true } })
+    sendMemberAddedMail({
+      toEmail: email,
+      toName: targetUser.displayName,
+      regionName: region?.name || 'Unknown',
+      role,
+    }).catch(() => {})
 
     return apiSuccess({ success: true })
   } catch (e) {

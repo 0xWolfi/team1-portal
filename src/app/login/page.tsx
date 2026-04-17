@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { useAuth } from '@/context/auth-context'
+import { SupportWidget } from '@/components/layout/support-widget'
 
 export default function LoginPage() {
   return <Suspense><LoginContent /></Suspense>
@@ -98,6 +99,7 @@ function LoginContent() {
 
         <p className="text-center text-[10px] text-zinc-700 mt-8">&copy; {new Date().getFullYear()} team1. All rights reserved.</p>
       </div>
+      <SupportWidget />
     </div>
   )
 }
