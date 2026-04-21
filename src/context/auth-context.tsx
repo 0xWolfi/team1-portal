@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { useSession, signOut as nextAuthSignOut } from 'next-auth/react'
 import { api } from '@/lib/api-client'
 import type { AuthUser } from '@/types'
@@ -21,21 +21,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const { data: session, status } = useSession()
+  const initCalledRef = useRef(false)
 
   const refreshUser = useCallback(async () => {
-    // Check for NextAuth session token first
-    if (session && (session as any).accessToken) {
-      const token = (session as any).accessToken as string
-      if (!api.getToken()) {
-        api.setToken(token)
-      }
+    // If we have a NextAuth session but haven't initialized httpOnly cookies yet, do so
+    if (session && (session as any).userId && !initCalledRef.current) {
+      initCalledRef.current = true
+      await fetch('/api/auth/init', { method: 'POST', credentials: 'include' })
     }
 
-    const token = api.getToken()
-    if (!token) { setUser(null); setLoading(false); return }
+    // Fetch user profile — cookies are sent automatically
     const res = await api.get<AuthUser>('/api/auth/me')
-    if (res.success && res.data) setUser(res.data)
-    else { setUser(null); api.setToken(null) }
+    if (res.success && res.data) {
+      setUser(res.data)
+    } else {
+      setUser(null)
+    }
     setLoading(false)
   }, [session])
 
@@ -47,8 +48,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await api.post('/api/auth/logout')
-    api.setToken(null)
     setUser(null)
+    initCalledRef.current = false
     await nextAuthSignOut({ callbackUrl: '/login' })
   }
 

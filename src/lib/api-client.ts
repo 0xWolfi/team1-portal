@@ -1,38 +1,27 @@
 const API_BASE = ''
 
 class ApiClient {
-  private token: string | null = null
-
-  setToken(token: string | null) {
-    this.token = token
-    if (token) localStorage.setItem('access_token', token)
-    else localStorage.removeItem('access_token')
-  }
-
-  getToken() {
-    if (this.token) return this.token
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('access_token')
-    }
-    return this.token
-  }
-
   async fetch<T = unknown>(url: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; error?: string }> {
-    const token = this.getToken()
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...((options.headers as Record<string, string>) || {}),
     }
-    if (token) headers['Authorization'] = `Bearer ${token}`
 
-    let res = await fetch(`${API_BASE}${url}`, { ...options, headers })
+    let res = await fetch(`${API_BASE}${url}`, {
+      ...options,
+      headers,
+      credentials: 'include', // Send httpOnly cookies automatically
+    })
 
-    // If 401, try to refresh
-    if (res.status === 401 && token) {
+    // If 401, try to refresh via cookie-based refresh token
+    if (res.status === 401) {
       const refreshed = await this.refreshToken()
       if (refreshed) {
-        headers['Authorization'] = `Bearer ${this.token}`
-        res = await fetch(`${API_BASE}${url}`, { ...options, headers })
+        res = await fetch(`${API_BASE}${url}`, {
+          ...options,
+          headers,
+          credentials: 'include',
+        })
       }
     }
 
@@ -63,12 +52,8 @@ class ApiClient {
         credentials: 'include',
       })
       const json = await res.json()
-      if (json.success && json.data?.accessToken) {
-        this.setToken(json.data.accessToken)
-        return true
-      }
+      return json.success
     } catch {}
-    this.setToken(null)
     return false
   }
 }

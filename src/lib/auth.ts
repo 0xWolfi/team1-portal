@@ -61,10 +61,22 @@ export async function createSession(userId: string, ip?: string, ua?: string) {
 }
 
 export async function getUserFromRequest(request: Request) {
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader?.startsWith('Bearer ')) return null
+  // Try Authorization header first (for API clients), then httpOnly cookie
+  let token: string | null = null
 
-  const token = authHeader.slice(7)
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    token = authHeader.slice(7)
+  }
+
+  if (!token) {
+    const cookieHeader = request.headers.get('cookie') || ''
+    const match = cookieHeader.match(/accessToken=([^;]+)/)
+    token = match?.[1] || null
+  }
+
+  if (!token) return null
+
   const payload = verifyAccessToken(token)
   if (!payload) return null
 
@@ -80,6 +92,16 @@ export async function getUserFromRequest(request: Request) {
   })
 
   return user
+}
+
+/** Build Set-Cookie header value for the access token (httpOnly, 15 min). */
+export function accessTokenCookie(token: string): string {
+  return `accessToken=${token}; HttpOnly; Path=/; Max-Age=900; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
+}
+
+/** Build Set-Cookie header to clear the access token cookie. */
+export function clearAccessTokenCookie(): string {
+  return `accessToken=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`
 }
 
 export function apiSuccess(data: unknown, status = 200) {

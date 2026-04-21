@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { apiSuccess, apiError } from '@/lib/auth'
+import { apiSuccess, apiError, clearAccessTokenCookie } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
@@ -13,7 +13,9 @@ export async function POST(request: Request) {
 
     const response = apiSuccess({ message: 'Logged out' })
     const res = new Response(response.body, response)
-    res.headers.set(
+    // Clear both cookies
+    res.headers.append('Set-Cookie', clearAccessTokenCookie())
+    res.headers.append(
       'Set-Cookie',
       `refreshToken=; HttpOnly; Path=/; Max-Age=0; SameSite=Lax`
     )

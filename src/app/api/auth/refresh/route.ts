@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db'
-import { generateAccessToken, generateRefreshToken, apiSuccess, apiError } from '@/lib/auth'
-import { cookies } from 'next/headers'
+import { generateAccessToken, generateRefreshToken, apiSuccess, apiError, accessTokenCookie } from '@/lib/auth'
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +33,9 @@ export async function POST(request: Request) {
 
     const response = apiSuccess({ accessToken })
     const res = new Response(response.body, response)
-    res.headers.set(
+    // Set both access token and refresh token as httpOnly cookies
+    res.headers.append('Set-Cookie', accessTokenCookie(accessToken))
+    res.headers.append(
       'Set-Cookie',
       `refreshToken=${newRefreshToken}; HttpOnly; Path=/; Max-Age=${30 * 24 * 60 * 60}; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`
     )

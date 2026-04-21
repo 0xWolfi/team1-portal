@@ -1,7 +1,14 @@
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/db'
-import { generateAccessToken, createSession } from '@/lib/auth'
+// Token generation is now handled by /api/auth/init (httpOnly cookies)
+import '@/lib/auth' // ensure JWT_SECRET validation runs at startup
+
+// Fail-closed: require NEXTAUTH_SECRET to be set
+const NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET
+if (!NEXTAUTH_SECRET || NEXTAUTH_SECRET.length < 32) {
+  throw new Error('NEXTAUTH_SECRET env var is required and must be at least 32 characters')
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -73,20 +80,14 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email.toLowerCase().trim() },
         })
-
         if (dbUser) {
-          const accessToken = generateAccessToken({ userId: dbUser.id, email: dbUser.email })
-          const refreshToken = await createSession(dbUser.id)
-          token.accessToken = accessToken
-          token.refreshToken = refreshToken
           token.userId = dbUser.id
         }
       }
       return token
     },
     async session({ session, token }: any) {
-      if (token.accessToken) {
-        session.accessToken = token.accessToken
+      if (token.userId) {
         session.userId = token.userId
       }
       return session
@@ -96,5 +97,5 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     error: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: NEXTAUTH_SECRET,
 }
