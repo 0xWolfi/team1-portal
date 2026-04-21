@@ -18,8 +18,9 @@ export function Avatar({ src, name, size = 'md', className }: AvatarProps) {
     lg: 'h-14 w-14 text-base',
     xl: 'h-20 w-20 text-xl',
   }
-  if (src) {
-    return <img src={src} alt={name} className={cn('rounded-full object-cover', sizes[size], className)} />
+  const safeSrc = src && /^https?:\/\//i.test(src) ? src : null
+  if (safeSrc) {
+    return <img src={safeSrc} alt={name} className={cn('rounded-full object-cover', sizes[size], className)} />
   }
   return (
     <div className={cn('rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-medium shrink-0', sizes[size], className)}>

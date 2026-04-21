@@ -20,7 +20,7 @@ const payloadSchema = z.object({
   typeOther: z.string().max(120).optional(),
   title: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
-  date: z.string().min(1),
+  date: z.string().min(1).refine((d) => !isNaN(Date.parse(d)), 'Invalid date format'),
   link: z.string().url().optional(),
   visibility: z.number().int().min(0).max(3).optional(),
   includeInReport: z.boolean().optional(),

@@ -1,5 +1,16 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { z } from 'zod'
+
+const rosterEntrySchema = z.object({
+  email: z.string().email().optional(),
+  xHandle: z.string().max(100).optional(),
+  name: z.string().max(200).optional(),
+})
+
+const rosterBulkSchema = z.object({
+  entries: z.array(rosterEntrySchema).max(100, 'Maximum 100 entries per batch'),
+})
 
 export async function GET(request: Request) {
   try {
@@ -31,7 +42,7 @@ export async function GET(request: Request) {
 
     return apiSuccess({ items, total })
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 
@@ -46,8 +57,11 @@ export async function POST(request: Request) {
 
     // Single add
     if (body.email || body.xHandle) {
-      const email = body.email?.toLowerCase().trim() || null
-      const xHandle = body.xHandle?.replace('@', '').trim() || null
+      const parsed = rosterEntrySchema.safeParse(body)
+      if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
+      const email = parsed.data.email?.toLowerCase().trim() || null
+      const xHandle = parsed.data.xHandle?.replace('@', '').trim() || null
 
       if (!email && !xHandle) {
         return apiError('Email or X handle is required')
@@ -63,7 +77,7 @@ export async function POST(request: Request) {
         data: {
           email,
           xHandle,
-          name: body.name?.trim() || null,
+          name: parsed.data.name?.trim() || null,
           addedById: user.id,
         },
       })
@@ -84,7 +98,10 @@ export async function POST(request: Request) {
 
     // Bulk import (array of { email, xHandle, name })
     if (Array.isArray(body.entries)) {
-      const entries = body.entries as Array<{ email?: string; xHandle?: string; name?: string }>
+      const bulkParsed = rosterBulkSchema.safeParse(body)
+      if (!bulkParsed.success) return apiError(bulkParsed.error.errors[0].message, 422)
+
+      const entries = bulkParsed.data.entries
       let added = 0
       let skipped = 0
 
@@ -131,7 +148,7 @@ export async function POST(request: Request) {
 
     return apiError('Invalid request body')
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 
@@ -164,6 +181,6 @@ export async function DELETE(request: Request) {
 
     return apiSuccess({ deleted: true })
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }

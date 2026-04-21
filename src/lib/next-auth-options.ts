@@ -72,8 +72,8 @@ export const authOptions: NextAuthOptions = {
         return true
       }
 
-      // Not in roster — deny login
-      return '/login?error=not_in_roster'
+      // Not in roster — deny login (generic error to prevent account enumeration)
+      return false
     },
     async jwt({ token, account, user }) {
       if (account && user?.email) {

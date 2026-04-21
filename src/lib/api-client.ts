@@ -1,6 +1,8 @@
 const API_BASE = ''
 
 class ApiClient {
+  private refreshPromise: Promise<boolean> | null = null
+
   async fetch<T = unknown>(url: string, options: RequestInit = {}): Promise<{ success: boolean; data?: T; error?: string }> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -10,12 +12,12 @@ class ApiClient {
     let res = await fetch(`${API_BASE}${url}`, {
       ...options,
       headers,
-      credentials: 'include', // Send httpOnly cookies automatically
+      credentials: 'include',
     })
 
-    // If 401, try to refresh via cookie-based refresh token
+    // If 401, try to refresh via cookie-based refresh token (with mutex)
     if (res.status === 401) {
-      const refreshed = await this.refreshToken()
+      const refreshed = await this.refreshTokenOnce()
       if (refreshed) {
         res = await fetch(`${API_BASE}${url}`, {
           ...options,
@@ -43,6 +45,20 @@ class ApiClient {
 
   async del<T = unknown>(url: string) {
     return this.fetch<T>(url, { method: 'DELETE' })
+  }
+
+  /**
+   * Ensures only one refresh request runs at a time.
+   * Concurrent callers share the same in-flight promise.
+   */
+  private refreshTokenOnce(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise
+
+    this.refreshPromise = this.refreshToken().finally(() => {
+      this.refreshPromise = null
+    })
+
+    return this.refreshPromise
   }
 
   private async refreshToken(): Promise<boolean> {

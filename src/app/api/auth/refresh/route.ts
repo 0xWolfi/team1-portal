@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
     const accessToken = generateAccessToken({ userId: session.userId, email: session.user.email })
 
-    const response = apiSuccess({ accessToken })
+    const response = apiSuccess({ refreshed: true })
     const res = new Response(response.body, response)
     // Set both access token and refresh token as httpOnly cookies
     res.headers.append('Set-Cookie', accessTokenCookie(accessToken))

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { sendMemberAddedMail } from '@/lib/mailer'
+import { memberAssignmentSchema } from '@/lib/validations'
 
 export async function GET(request: Request) {
   try {
@@ -94,9 +95,11 @@ export async function POST(request: Request) {
     if (!admin && !isLead) return apiError('Forbidden', 403)
 
     const body = await request.json()
-    const { email, userId, regionId, role = 'member' } = body
+    const parsed = memberAssignmentSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
 
-    if (!regionId) return apiError('regionId is required', 422)
+    const { email, userId, regionId, role } = parsed.data
+
     if (!email && !userId) return apiError('email or userId is required', 422)
 
     // Cross-region check: leads can only add members to their own regions
@@ -108,7 +111,7 @@ export async function POST(request: Request) {
     }
 
     // Look up user by email if userId not provided; auto-create if they don't exist yet
-    let targetUserId = userId
+    let targetUserId: string = userId || ''
     if (email && !userId) {
       const normalizedEmail = email.toLowerCase().trim()
       let targetUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })

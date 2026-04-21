@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 
       // Status / admin
       status: user.status,
-      adminNotes: user.adminNotes,
+      adminNotes: user.adminRole ? user.adminNotes : undefined,
 
       // Privacy
       privacySettings: user.privacySettings,
@@ -173,10 +173,19 @@ export async function PUT(request: Request) {
       data.cohort = Number.isFinite(n) ? n : null
     }
 
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data,
-    })
+    let updated
+    try {
+      updated = await prisma.user.update({
+        where: { id: user.id },
+        data,
+      })
+    } catch (e: any) {
+      // Catch unique constraint violation on username (race condition safe)
+      if (e?.code === 'P2002' && e?.meta?.target?.includes('username')) {
+        return apiError('Username is already taken', 409)
+      }
+      throw e
+    }
 
     // Audit (non-blocking)
     const after: Record<string, unknown> = {}

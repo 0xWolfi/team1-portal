@@ -1,6 +1,12 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { recordAudit, getRequestIp } from '@/lib/audit'
+import { z } from 'zod'
+
+const memberUpdateSchema = z.object({
+  role: z.enum(['member', 'lead', 'co_lead']).optional(),
+  status: z.enum(['accepted', 'pending', 'rejected']).optional(),
+})
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -15,11 +21,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params
     const body = await request.json()
-    const { role, status } = body
+    const parsed = memberUpdateSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
 
     const data: Record<string, unknown> = {}
-    if (role) data.role = role
-    if (status) data.status = status
+    if (parsed.data.role) data.role = parsed.data.role
+    if (parsed.data.status) data.status = parsed.data.status
 
     const before = await prisma.userRegionMembership.findUnique({
       where: { id },

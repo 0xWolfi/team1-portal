@@ -10,7 +10,7 @@ const activitySchema = z.object({
   typeOther: z.string().max(120).optional(),        // detail when type === "other"
   title: z.string().min(1, 'Title is required').max(200),
   description: z.string().max(2000).optional(),
-  date: z.string().min(1, 'Date is required'),
+  date: z.string().min(1, 'Date is required').refine((d) => !isNaN(Date.parse(d)), 'Invalid date format'),
   link: z.string().url().optional().or(z.literal('')),
   visibility: z.number().int().min(0).max(3).optional(),
   includeInReport: z.boolean().optional(),
@@ -38,7 +38,7 @@ export async function GET(request: Request) {
 
     return apiSuccess(activities.map(serialize))
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     return apiSuccess(serialize(activity))
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 
@@ -128,7 +128,7 @@ export async function PATCH(request: Request) {
 
     return apiSuccess(serialize(updated))
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 
@@ -162,7 +162,7 @@ export async function DELETE(request: Request) {
 
     return apiSuccess({ deleted: true })
   } catch (e: any) {
-    return apiError(e.message || 'Server error', 500)
+    return apiError('Internal server error', 500)
   }
 }
 

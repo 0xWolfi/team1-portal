@@ -227,7 +227,7 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
               <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="YouTube" value={u.youtube} field="youtube" />
               <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Reddit" value={u.reddit} field="reddit" />
               {canSee(u, 'email') && u.email && <div className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-300">{u.email}</span></div>}
-              {socialLinks.filter(l => l.name && l.url).map((link, i) => (
+              {socialLinks.filter(l => l.name && l.url && /^https?:\/\//i.test(l.url)).map((link, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><a href={link.url} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 truncate">{link.name}</a></div>
               ))}
             </div>

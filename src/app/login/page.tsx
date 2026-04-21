@@ -13,7 +13,9 @@ function LoginContent() {
   const { user, loading } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirect = searchParams.get('redirect') || '/dashboard'
+  const rawRedirect = searchParams.get('redirect') || '/dashboard'
+  // Prevent open redirect — only allow relative paths
+  const redirect = rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard'
 
   const [error, setError] = useState('')
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -26,8 +28,8 @@ function LoginContent() {
   // Show errors from OAuth redirects
   useEffect(() => {
     const errParam = searchParams.get('error')
-    if (errParam === 'not_in_roster') {
-      setError('Your email is not in the member roster. Please contact an admin.')
+    if (errParam) {
+      setError('Unable to sign in. Please check your credentials or contact an admin.')
     }
   }, [searchParams])
 
