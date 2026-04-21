@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { sendMemberAddedMail } from '@/lib/mailer'
+import { leadAssignmentSchema } from '@/lib/validations'
 
 export async function GET(request: Request) {
   try {
@@ -35,10 +36,10 @@ export async function POST(request: Request) {
     if (!admin) return apiError('Forbidden', 403)
 
     const body = await request.json()
-    const { email, regionId, role = 'lead' } = body
+    const parsed = leadAssignmentSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
 
-    if (!email || !regionId) return apiError('Email and regionId required', 422)
-
+    const { email, regionId, role } = parsed.data
     const normalizedEmail = email.toLowerCase().trim()
     let targetUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
     if (!targetUser) {

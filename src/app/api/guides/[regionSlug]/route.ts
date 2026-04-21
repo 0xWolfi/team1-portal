@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
-import { guideSchema } from '@/lib/validations'
+import { guideSchema, guideUpdateSchema } from '@/lib/validations'
 import { slugify } from '@/lib/helpers'
 
 export async function GET(request: Request, { params }: { params: Promise<{ regionSlug: string }> }) {
@@ -70,6 +70,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
     const { id, ...data } = body
     if (!id) return apiError('Guide ID required', 422)
 
+    const parsed = guideUpdateSchema.safeParse(data)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
     const guide = await prisma.guide.findUnique({ where: { id } })
     if (!guide) return apiError('Not found', 404)
@@ -81,7 +84,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
 
     const updated = await prisma.guide.update({
       where: { id },
-      data: { title: data.title, category: data.category, content: data.content, coverImageUrl: data.coverImageUrl, readTime: data.readTime, visibility: data.visibility, status: data.status },
+      data: parsed.data,
       include: { region: { select: { name: true, slug: true } }, creator: { select: { displayName: true, username: true } } },
     })
     return apiSuccess(updated)

@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
       const existingUser = await prisma.user.findUnique({ where: { email } })
       if (existingUser) return true
 
-      // Auto-whitelist all @team1.network emails — land them in Global as members
+      // Auto-whitelist all @team1.network emails — create as pending, require admin approval
       if (email.endsWith('@team1.network')) {
         const newUser = await prisma.user.create({
           data: {
@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
               userId: newUser.id,
               regionId: globalRegion.id,
               role: 'member',
-              status: 'accepted',
+              status: 'pending',
               isPrimary: true,
             },
           })

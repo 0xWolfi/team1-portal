@@ -3,6 +3,15 @@ import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) return apiError('Unauthorized', 401)
+
+    const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
+    const isLead = await prisma.userRegionMembership.findFirst({
+      where: { userId: user.id, role: { in: ['lead', 'co_lead'] } },
+    })
+    if (!admin && !isLead) return apiError('Forbidden', 403)
+
     const { id } = await params
     const app = await prisma.membershipApplication.findUnique({ where: { id } })
     if (!app) return apiError('Application not found', 404)
@@ -28,6 +37,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     const { status, reviewNote, regionId } = body
 
     if (!['approved', 'rejected'].includes(status)) return apiError('Invalid status', 422)
+
+    // Cross-region check: leads can only approve for their own regions
+    if (!admin && regionId) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    }
 
     const app = await prisma.membershipApplication.update({
       where: { id },

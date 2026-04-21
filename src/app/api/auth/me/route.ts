@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { recordAudit, getRequestIp } from '@/lib/audit'
+import { selfEditableProfileSchema } from '@/lib/validations'
 
 // Fields the user themselves can edit on their own profile.
 const SELF_EDITABLE_FIELDS = [
@@ -10,7 +11,7 @@ const SELF_EDITABLE_FIELDS = [
   'studentStatus', 'university', 'languages', 'cohort',
   'telegram', 'github', 'linkedin', 'instagram', 'reddit',
   'arena', 'youtube', 'tiktok', 'twitch', 'farcaster', 'linktree',
-  'podcast', 'blog', 'website', 'buildersHub',
+  'podcast', 'blog', 'website',
   'walletAddress', 'skills', 'interests', 'roles', 'availability',
   'socialLinks', 'eventHostingPrefs',
   'cChainAddress', 'developmentGoals', 'shippingAddress', 'merchSizes',
@@ -72,7 +73,6 @@ export async function GET(request: Request) {
       podcast: user.podcast,
       blog: user.blog,
       website: user.website,
-      buildersHub: user.buildersHub,
 
       // Profile extras
       walletAddress: user.walletAddress,
@@ -141,11 +141,15 @@ export async function PUT(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const body = await request.json()
+    const parsed = selfEditableProfileSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
+    const validatedBody = parsed.data
 
     // If username is being changed, check uniqueness
-    if (body.username && body.username !== user.username) {
+    if (validatedBody.username && validatedBody.username !== user.username) {
       const existing = await prisma.user.findUnique({
-        where: { username: body.username },
+        where: { username: validatedBody.username },
       })
       if (existing && existing.id !== user.id) {
         return apiError('Username is already taken', 409)
@@ -157,8 +161,9 @@ export async function PUT(request: Request) {
     const data: Record<string, unknown> = {}
     const before: Record<string, unknown> = {}
     for (const key of SELF_EDITABLE_FIELDS) {
-      if (body[key] !== undefined) {
-        data[key] = body[key] === '' ? null : body[key]
+      if ((validatedBody as Record<string, unknown>)[key] !== undefined) {
+        const val = (validatedBody as Record<string, unknown>)[key]
+        data[key] = val === '' ? null : val
         before[key] = (user as unknown as Record<string, unknown>)[key as SelfEditable]
       }
     }

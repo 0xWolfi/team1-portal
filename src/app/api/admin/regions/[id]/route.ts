@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { regionUpdateSchema } from '@/lib/validations'
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,17 +12,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params
     const body = await request.json()
+    const parsed = regionUpdateSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
 
     const region = await prisma.region.update({
       where: { id },
-      data: {
-        name: body.name,
-        country: body.country,
-        description: body.description,
-        logoUrl: body.logoUrl,
-        coverImageUrl: body.coverImageUrl,
-        isActive: body.isActive,
-      },
+      data: parsed.data,
     })
     return apiSuccess(region)
   } catch (e) {

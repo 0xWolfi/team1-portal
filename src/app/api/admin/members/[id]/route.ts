@@ -27,6 +27,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     })
     if (!before) return apiError('Membership not found', 404)
 
+    // Cross-region check: leads can only update members in their own regions
+    if (!admin) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId: before.regionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    }
+
     const membership = await prisma.userRegionMembership.update({
       where: { id },
       data,

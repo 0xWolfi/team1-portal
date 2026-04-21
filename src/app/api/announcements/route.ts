@@ -49,6 +49,19 @@ export async function POST(request: Request) {
     const parsed = announcementSchema.safeParse(body)
     if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
 
+    // Only admins can create global announcements
+    if (parsed.data.isGlobal && !admin) {
+      return apiError('Only admins can create global announcements', 403)
+    }
+
+    // Cross-region check: leads can only post to their own regions
+    if (!admin && parsed.data.regionId) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId: parsed.data.regionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    }
+
     const { expiresAt, ...rest } = parsed.data
     const announcement = await prisma.announcement.create({
       data: {

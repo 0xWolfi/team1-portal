@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
-import { programSchema } from '@/lib/validations'
+import { programSchema, programUpdateSchema } from '@/lib/validations'
 
 export async function GET(request: Request, { params }: { params: Promise<{ regionSlug: string }> }) {
   try {
@@ -71,6 +71,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
     const { id, ...data } = body
     if (!id) return apiError('Program ID required', 422)
 
+    const parsed = programUpdateSchema.safeParse(data)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
     const program = await prisma.program.findUnique({ where: { id } })
     if (!program) return apiError('Not found', 404)
@@ -80,13 +83,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
     })
     if (!admin && !isLead) return apiError('Forbidden', 403)
 
+    const { startsAt, endsAt, ...rest } = parsed.data
     const updated = await prisma.program.update({
       where: { id },
       data: {
-        title: data.title, description: data.description, content: data.content,
-        eligibility: data.eligibility, benefits: data.benefits, status: data.status,
-        startsAt: data.startsAt ? new Date(data.startsAt) : null,
-        endsAt: data.endsAt ? new Date(data.endsAt) : null,
+        ...rest,
+        ...(startsAt !== undefined ? { startsAt: startsAt ? new Date(startsAt) : null } : {}),
+        ...(endsAt !== undefined ? { endsAt: endsAt ? new Date(endsAt) : null } : {}),
       },
       include: { region: { select: { name: true, slug: true } }, creator: { select: { displayName: true, username: true } } },
     })

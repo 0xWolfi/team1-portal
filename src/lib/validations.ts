@@ -85,3 +85,79 @@ export const regionSchema = z.object({
   coverImageUrl: z.string().optional(),
   isActive: z.boolean().default(true),
 })
+
+// Partial schemas for PUT/PATCH handlers
+export const playbookUpdateSchema = playbookSchema.omit({ regionId: true }).partial()
+export const programUpdateSchema = programSchema.omit({ regionId: true }).partial()
+export const guideUpdateSchema = guideSchema.omit({ regionId: true }).partial()
+export const regionUpdateSchema = regionSchema.partial()
+
+// Lead assignment
+export const leadAssignmentSchema = z.object({
+  email: z.string().email('Invalid email'),
+  regionId: z.string().min(1, 'Region is required'),
+  role: z.enum(['lead', 'co_lead']).default('lead'),
+})
+
+// Member assignment
+export const memberAssignmentSchema = z.object({
+  email: z.string().email().optional(),
+  userId: z.string().optional(),
+  regionId: z.string().min(1, 'Region is required'),
+  role: z.enum(['member', 'lead', 'co_lead']).default('member'),
+})
+
+// Notification update
+export const notificationUpdateSchema = z.object({
+  markAllRead: z.boolean().optional(),
+  id: z.string().optional(),
+})
+
+// Self-editable profile fields
+export const selfEditableProfileSchema = z.object({
+  displayName: z.string().min(1).max(100).optional(),
+  username: z.string().min(1).max(50).optional(),
+  bio: z.string().max(500).optional().nullable(),
+  title: z.string().max(100).optional().nullable(),
+  country: z.string().max(100).optional().nullable(),
+  discord: z.string().max(100).optional().nullable(),
+  xHandle: z.string().max(100).optional().nullable(),
+  city: z.string().max(100).optional().nullable(),
+  state: z.string().max(100).optional().nullable(),
+  studentStatus: z.string().max(50).optional().nullable(),
+  university: z.string().max(200).optional().nullable(),
+  languages: z.string().max(500).optional().nullable(),
+  cohort: z.union([z.number(), z.string()]).optional().nullable(),
+  telegram: z.string().max(100).optional().nullable(),
+  github: z.string().max(100).optional().nullable(),
+  linkedin: z.string().max(200).optional().nullable(),
+  instagram: z.string().max(100).optional().nullable(),
+  reddit: z.string().max(100).optional().nullable(),
+  arena: z.string().max(100).optional().nullable(),
+  youtube: z.string().max(200).optional().nullable(),
+  tiktok: z.string().max(100).optional().nullable(),
+  twitch: z.string().max(100).optional().nullable(),
+  farcaster: z.string().max(100).optional().nullable(),
+  linktree: z.string().max(200).optional().nullable(),
+  podcast: z.string().max(200).optional().nullable(),
+  blog: z.string().max(200).optional().nullable(),
+  website: z.string().max(200).optional().nullable(),
+  walletAddress: z.string().max(200).optional().nullable(),
+  skills: z.string().max(1000).optional().nullable(),
+  interests: z.string().max(1000).optional().nullable(),
+  roles: z.string().max(500).optional().nullable(),
+  availability: z.string().max(200).optional().nullable(),
+  socialLinks: z.string().max(2000).optional().nullable(),
+  eventHostingPrefs: z.string().max(1000).optional().nullable(),
+  cChainAddress: z.string().max(200).optional().nullable(),
+  developmentGoals: z.string().max(2000).optional().nullable(),
+  shippingAddress: z.string().max(1000).optional().nullable(),
+  merchSizes: z.string().max(500).optional().nullable(),
+  unisexTshirtSize: z.string().max(20).optional().nullable(),
+  unisexHoodieSize: z.string().max(20).optional().nullable(),
+  unisexPantsSize: z.string().max(20).optional().nullable(),
+  womensTshirtSize: z.string().max(20).optional().nullable(),
+  womensHoodieSize: z.string().max(20).optional().nullable(),
+  womensPantsSize: z.string().max(20).optional().nullable(),
+  privacySettings: z.string().max(2000).optional().nullable(),
+})

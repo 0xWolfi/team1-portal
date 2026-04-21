@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
-import { playbookSchema } from '@/lib/validations'
+import { playbookSchema, playbookUpdateSchema } from '@/lib/validations'
 
 export async function GET(request: Request, { params }: { params: Promise<{ regionSlug: string }> }) {
   try {
@@ -71,6 +71,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
 
     if (!id) return apiError('Playbook ID required', 422)
 
+    const parsed = playbookUpdateSchema.safeParse(data)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
     const playbook = await prisma.playbook.findUnique({ where: { id } })
     if (!playbook) return apiError('Playbook not found', 404)
@@ -82,7 +85,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ regi
 
     const updated = await prisma.playbook.update({
       where: { id },
-      data: { title: data.title, description: data.description, content: data.content, coverImageUrl: data.coverImageUrl, visibility: data.visibility, status: data.status },
+      data: parsed.data,
       include: { region: { select: { name: true, slug: true } }, creator: { select: { displayName: true, username: true } } },
     })
 

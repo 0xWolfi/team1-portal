@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { notificationUpdateSchema } from '@/lib/validations'
 
 export async function GET(request: Request) {
   try {
@@ -23,14 +24,17 @@ export async function PUT(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const body = await request.json()
-    if (body.markAllRead) {
+    const parsed = notificationUpdateSchema.safeParse(body)
+    if (!parsed.success) return apiError(parsed.error.errors[0].message, 422)
+
+    if (parsed.data.markAllRead) {
       await prisma.notification.updateMany({
         where: { userId: user.id, isRead: false },
         data: { isRead: true },
       })
-    } else if (body.id) {
+    } else if (parsed.data.id) {
       await prisma.notification.update({
-        where: { id: body.id, userId: user.id },
+        where: { id: parsed.data.id, userId: user.id },
         data: { isRead: true },
       })
     }

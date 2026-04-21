@@ -99,6 +99,14 @@ export async function POST(request: Request) {
     if (!regionId) return apiError('regionId is required', 422)
     if (!email && !userId) return apiError('email or userId is required', 422)
 
+    // Cross-region check: leads can only add members to their own regions
+    if (!admin) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    }
+
     // Look up user by email if userId not provided; auto-create if they don't exist yet
     let targetUserId = userId
     if (email && !userId) {

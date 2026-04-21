@@ -3,7 +3,14 @@ import bcrypt from 'bcryptjs'
 import { prisma } from './db'
 import crypto from 'crypto'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret.length < 32) {
+    throw new Error('JWT_SECRET env var is required and must be at least 32 characters')
+  }
+  return secret
+}
+const JWT_SECRET: string = getJwtSecret()
 const JWT_EXPIRES_IN = (process.env.JWT_EXPIRES_IN || '15m') as string
 const REFRESH_DAYS = parseInt(process.env.REFRESH_TOKEN_EXPIRES_DAYS || '30')
 
@@ -18,7 +25,7 @@ export function generateAccessToken(payload: TokenPayload): string {
 
 export function verifyAccessToken(token: string): TokenPayload | null {
   try {
-    return jwt.verify(token, JWT_SECRET) as TokenPayload
+    return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as unknown as TokenPayload
   } catch {
     return null
   }

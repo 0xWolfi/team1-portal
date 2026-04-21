@@ -18,6 +18,14 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (!['approved', 'rejected'].includes(status)) return apiError('Invalid status', 422)
 
+    // Cross-region check: leads can only approve for their own regions
+    if (!admin && regionId) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    }
+
     const app = await prisma.membershipApplication.update({
       where: { id },
       data: { status, reviewedBy: user.id, reviewNote, reviewedAt: new Date() },

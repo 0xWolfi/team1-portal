@@ -38,7 +38,6 @@ export interface AuthUser {
   podcast: string | null
   blog: string | null
   website: string | null
-  buildersHub: string | null
 
   // Profile extras
   walletAddress: string | null
