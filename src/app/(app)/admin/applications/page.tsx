@@ -4,6 +4,8 @@ import { ClipboardList, Check, X as XIcon, Eye, MapPin, Clock, Link2, MessageCir
 import { useApi, useMutation } from '@/hooks/use-api'
 import { useToast } from '@/context/toast-context'
 import { formatDate, getStatusBadgeColor } from '@/lib/helpers'
+import { SocialLink } from '@/components/profile/social-link'
+import type { SocialPlatform } from '@/lib/socials'
 import type { MembershipApplication, Region } from '@/types'
 
 export default function AdminApplicationsPage() {
@@ -176,10 +178,10 @@ export default function AdminApplicationsPage() {
 
               {/* Q1: Contact Info */}
               <Section title="Contact Information">
-                <Field label="Discord" value={selected.discord} />
-                <Field label="X (Twitter)" value={selected.xHandle} />
-                <Field label="Telegram" value={selected.telegram} />
-                <Field label="GitHub" value={selected.github} />
+                <SocialField label="Discord" platform="discord" value={selected.discord} />
+                <SocialField label="X (Twitter)" platform="x" value={selected.xHandle} />
+                <SocialField label="Telegram" platform="telegram" value={selected.telegram} />
+                <SocialField label="GitHub" platform="github" value={selected.github} />
               </Section>
 
               {/* Q2: Location */}
@@ -357,6 +359,16 @@ function Field({ label, value }: { label: string; value?: string | null }) {
     <div className="flex justify-between items-center py-1.5">
       <span className="text-xs text-zinc-500">{label}</span>
       <span className="text-sm text-zinc-700 dark:text-zinc-300">{value}</span>
+    </div>
+  )
+}
+
+function SocialField({ label, platform, value }: { label: string; platform: SocialPlatform; value?: string | null }) {
+  if (!value) return null
+  return (
+    <div className="flex justify-between items-center py-1.5 gap-3">
+      <span className="text-xs text-zinc-500 shrink-0">{label}</span>
+      <SocialLink platform={platform} handle={value} className="text-sm" />
     </div>
   )
 }

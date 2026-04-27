@@ -45,6 +45,7 @@ export interface AuthUser {
   interests: string | null
   roles: string | null
   availability: string | null
+  availabilityHours: number | null
   socialLinks: string | null
   eventHostingPrefs: string | null
 

@@ -12,7 +12,7 @@ const SELF_EDITABLE_FIELDS = [
   'telegram', 'github', 'linkedin', 'instagram', 'reddit',
   'arena', 'youtube', 'tiktok', 'twitch', 'farcaster', 'linktree',
   'podcast', 'blog', 'website',
-  'walletAddress', 'skills', 'interests', 'roles', 'availability',
+  'walletAddress', 'skills', 'interests', 'roles', 'availability', 'availabilityHours',
   'socialLinks', 'eventHostingPrefs',
   'cChainAddress', 'developmentGoals', 'shippingAddress', 'merchSizes',
   'unisexTshirtSize', 'unisexHoodieSize', 'unisexPantsSize',
@@ -80,6 +80,7 @@ export async function GET(request: Request) {
       interests: user.interests,
       roles: user.roles,
       availability: user.availability,
+      availabilityHours: (user as unknown as { availabilityHours: number | null }).availabilityHours ?? null,
       socialLinks: user.socialLinks,
       eventHostingPrefs: user.eventHostingPrefs,
 

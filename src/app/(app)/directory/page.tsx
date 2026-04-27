@@ -8,6 +8,8 @@ import {
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
 import { getRoleBadgeColor } from '@/lib/helpers'
+import { SocialLink } from '@/components/profile/social-link'
+import type { SocialPlatform } from '@/lib/socials'
 import Link from 'next/link'
 import type { PrivacyLevel } from '@/types'
 
@@ -16,9 +18,11 @@ interface MemberUser {
   bio: string | null; email?: string; country: string | null; city: string | null; state: string | null
   discord: string | null; xHandle: string | null; telegram: string | null; github: string | null
   linkedin: string | null; instagram: string | null; reddit: string | null; arena: string | null
-  youtube: string | null; tiktok: string | null; podcast: string | null; blog: string | null; website: string | null
+  youtube: string | null; tiktok: string | null; twitch: string | null; farcaster: string | null
+  linktree: string | null; buildersHub: string | null
+  podcast: string | null; blog: string | null; website: string | null
   walletAddress: string | null; skills: string | null; interests: string | null; roles: string | null
-  availability: string | null; socialLinks: string | null; languages: string | null
+  availability: string | null; availabilityHours: number | null; socialLinks: string | null; languages: string | null
   studentStatus: string | null; university: string | null; eventHostingPrefs: string | null
   cChainAddress: string | null; developmentGoals: string | null; shippingAddress: string | null; merchSizes: string | null
   privacySettings: string | null
@@ -31,6 +35,17 @@ interface MemberEntry {
 function parseJson<T>(val: string | null | undefined, fallback: T): T {
   if (!val) return fallback
   try { return JSON.parse(val) as T } catch { return fallback }
+}
+
+function parseAvailabilityArr(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+    return []
+  } catch {
+    return [val]
+  }
 }
 
 export default function DirectoryPage() {
@@ -112,6 +127,7 @@ function DirectoryContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((m) => {
             const skills = parseJson<string[]>(m.user.skills, [])
+            const availabilityList = parseAvailabilityArr(m.user.availability)
             const location = canSee(m.user, 'city') ? [m.user.city, m.user.country].filter(Boolean).join(', ') : (m.user.country || '')
             return (
               <div key={m.id} className="group p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all cursor-pointer" onClick={() => setSelectedMember(m)}>
@@ -129,7 +145,11 @@ function DirectoryContent() {
                   {location && <div className="flex items-center gap-2 text-sm text-zinc-500"><MapPin size={14} className="text-zinc-400 dark:text-zinc-600" /><span>{location}</span></div>}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleBadgeColor(m.role)}`}>{m.role === 'co_lead' ? 'Co-Lead' : m.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                    {m.user.availability && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">{m.user.availability}</span>}
+                    {availabilityList.slice(0, 2).map((a) => (
+                      <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400">{a}</span>
+                    ))}
+                    {availabilityList.length > 2 && <span className="text-[10px] px-2 py-0.5 text-zinc-500 dark:text-zinc-600">+{availabilityList.length - 2}</span>}
+                    {m.user.availabilityHours != null && <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400">{m.user.availabilityHours} hrs/wk</span>}
                   </div>
                   {canSee(m.user, 'bio') && m.user.bio && <p className="text-xs text-zinc-600 dark:text-zinc-500 line-clamp-2 mt-2">{m.user.bio}</p>}
                   {skills.length > 0 && (
@@ -160,12 +180,18 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
   const interests = parseJson<string[]>(u.interests, [])
   const roles = parseJson<string[]>(u.roles, [])
   const languages = parseJson<string[]>(u.languages, [])
+  const availabilityList = parseAvailabilityArr(u.availability)
   const socialLinks = parseJson<{ name: string; url: string }[]>(u.socialLinks, [])
   const location = [canSee(u, 'city') ? u.city : null, canSee(u, 'state') ? u.state : null, u.country].filter(Boolean).join(', ')
 
-  const SocialRow = ({ icon, label, value, field }: { icon: React.ReactNode; label: string; value: string | null; field: string }) => {
+  const SocialRow = ({ icon, platform, value, field }: { icon: React.ReactNode; platform: SocialPlatform; value: string | null; field: string }) => {
     if (!value || !canSee(u, field)) return null
-    return <div className="flex items-center gap-3 text-sm">{icon}<span className="text-zinc-700 dark:text-zinc-300">{label ? `${label}: ` : ''}{value}</span></div>
+    return (
+      <div className="flex items-center gap-3 text-sm">
+        <span className="shrink-0">{icon}</span>
+        <SocialLink platform={platform} handle={value} showLabel className="text-sm" />
+      </div>
+    )
   }
 
   return (
@@ -192,7 +218,19 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
           <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4 space-y-3">
             <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Region</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{member.region.name}</span></div>
             <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Role</span><span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleBadgeColor(member.role)}`}>{member.role === 'co_lead' ? 'Co-Lead' : member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span></div>
-            {u.availability && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Availability</span><span className="text-xs text-emerald-700 dark:text-emerald-400">{u.availability}</span></div>}
+            {(availabilityList.length > 0 || u.availabilityHours != null) && (
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-xs text-zinc-500 shrink-0 pt-1">Availability</span>
+                <div className="flex flex-wrap gap-1.5 justify-end">
+                  {availabilityList.map((a) => (
+                    <span key={a} className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">{a}</span>
+                  ))}
+                  {u.availabilityHours != null && (
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300">{u.availabilityHours} hrs/wk</span>
+                  )}
+                </div>
+              </div>
+            )}
             {canSee(u, 'studentStatus') && u.studentStatus && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Student</span><span className="text-sm text-zinc-700 dark:text-zinc-300 capitalize">{u.studentStatus}</span></div>}
             {canSee(u, 'university') && u.university && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">University</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{u.university}</span></div>}
           </div>
@@ -216,17 +254,34 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
             <p className="text-xs text-zinc-500 mb-3">Contact & Social</p>
             <div className="space-y-2.5">
               {/* Always visible */}
-              {u.xHandle && <div className="flex items-center gap-3 text-sm"><Twitter size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">@{u.xHandle}</span></div>}
-              {u.discord && <div className="flex items-center gap-3 text-sm"><MessageCircle size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">{u.discord}</span></div>}
+              {u.xHandle && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Twitter size={14} className="text-zinc-500 shrink-0" />
+                  <SocialLink platform="x" handle={u.xHandle} />
+                </div>
+              )}
+              {u.discord && (
+                <div className="flex items-center gap-3 text-sm">
+                  <MessageCircle size={14} className="text-zinc-500 shrink-0" />
+                  <SocialLink platform="discord" handle={u.discord} />
+                </div>
+              )}
               {/* Privacy-gated */}
-              <SocialRow icon={<Send size={14} className="text-zinc-500 shrink-0" />} label="" value={u.telegram} field="telegram" />
-              <SocialRow icon={<Github size={14} className="text-zinc-500 shrink-0" />} label="" value={u.github} field="github" />
-              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="LinkedIn" value={u.linkedin} field="linkedin" />
-              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Instagram" value={u.instagram} field="instagram" />
-              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Website" value={u.website} field="website" />
-              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="YouTube" value={u.youtube} field="youtube" />
-              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Reddit" value={u.reddit} field="reddit" />
-              {canSee(u, 'email') && u.email && <div className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">{u.email}</span></div>}
+              <SocialRow icon={<Send size={14} className="text-zinc-500 shrink-0" />} platform="telegram" value={u.telegram} field="telegram" />
+              <SocialRow icon={<Github size={14} className="text-zinc-500 shrink-0" />} platform="github" value={u.github} field="github" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="linkedin" value={u.linkedin} field="linkedin" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="instagram" value={u.instagram} field="instagram" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="website" value={u.website} field="website" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="youtube" value={u.youtube} field="youtube" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="reddit" value={u.reddit} field="reddit" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="tiktok" value={u.tiktok} field="tiktok" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="twitch" value={u.twitch} field="twitch" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="farcaster" value={u.farcaster} field="farcaster" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="linktree" value={u.linktree} field="linktree" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="podcast" value={u.podcast} field="podcast" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="blog" value={u.blog} field="blog" />
+              <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} platform="buildersHub" value={u.buildersHub} field="buildersHub" />
+              {canSee(u, 'email') && u.email && <div className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><a href={`mailto:${u.email}`} className="text-zinc-700 hover:text-brand-600 dark:text-zinc-300 dark:hover:text-brand-400 hover:underline underline-offset-2 transition-colors break-all">{u.email}</a></div>}
               {socialLinks.filter(l => l.name && l.url && /^https?:\/\//i.test(l.url)).map((link, i) => (
                 <div key={i} className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><a href={link.url} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 truncate">{link.name}</a></div>
               ))}

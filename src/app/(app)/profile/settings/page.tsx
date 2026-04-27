@@ -10,8 +10,10 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { useToast } from '@/context/toast-context'
 import { api } from '@/lib/api-client'
+import { AVAILABILITY_OPTIONS } from '@/lib/constants'
 import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
+import { SocialLink } from '@/components/profile/social-link'
 import Link from 'next/link'
 import type { PrivacyLevel, MemberActivity } from '@/types'
 
@@ -31,15 +33,6 @@ const COUNTRIES = [
   'Slovakia', 'Slovenia', 'South Africa', 'South Korea', 'Spain', 'Sri Lanka', 'Sweden',
   'Switzerland', 'Taiwan', 'Tanzania', 'Thailand', 'Tunisia', 'Turkey', 'UAE', 'Uganda',
   'UK', 'Ukraine', 'Uruguay', 'USA', 'Uzbekistan', 'Venezuela', 'Vietnam',
-]
-
-const AVAILABILITY_OPTIONS = [
-  { value: '', label: 'Select availability...' },
-  { value: 'Open to Hack', label: 'Open to Hack' },
-  { value: 'Looking for Co-founder', label: 'Looking for Co-founder' },
-  { value: 'Hiring', label: 'Hiring' },
-  { value: 'Just Exploring', label: 'Just Exploring' },
-  { value: 'Not Available', label: 'Not Available' },
 ]
 
 const PREDEFINED_INTERESTS = [
@@ -86,6 +79,20 @@ const ACTIVITY_TYPES = [
 function parseJson<T>(val: string | null | undefined, fallback: T): T {
   if (!val) return fallback
   try { return JSON.parse(val) as T } catch { return fallback }
+}
+
+// Parse availability with backwards-compat for legacy freetext values.
+// New format: JSON array of strings. Legacy: a single freetext value.
+function parseAvailability(val: string | null | undefined): string[] {
+  if (!val) return []
+  try {
+    const parsed = JSON.parse(val)
+    if (Array.isArray(parsed)) return parsed.filter((v): v is string => typeof v === 'string')
+    return []
+  } catch {
+    // Legacy single freetext — keep it as a custom chip
+    return [val]
+  }
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -161,7 +168,7 @@ interface ProfileForm {
   reddit: string; arena: string; youtube: string; tiktok: string
   podcast: string; blog: string; website: string
   walletAddress: string; skills: string[]; interests: string[]; roles: string[]
-  availability: string; socialLinks: { name: string; url: string }[]
+  availability: string[]; availabilityHours: string; socialLinks: { name: string; url: string }[]
   eventHostingPrefs: string[]
   cChainAddress: string; developmentGoals: string; shippingAddress: string; merchSizes: string
   privacy: Record<string, PrivacyLevel>
@@ -194,7 +201,7 @@ export default function ProfileSettingsPage() {
     reddit: '', arena: '', youtube: '', tiktok: '',
     podcast: '', blog: '', website: '',
     walletAddress: '', skills: [], interests: [], roles: [],
-    availability: '', socialLinks: [], eventHostingPrefs: [],
+    availability: [], availabilityHours: '', socialLinks: [], eventHostingPrefs: [],
     cChainAddress: '', developmentGoals: '', shippingAddress: '', merchSizes: '',
     privacy: {},
   })
@@ -215,7 +222,9 @@ export default function ProfileSettingsPage() {
       website: (user as any).website || '',
       walletAddress: user.walletAddress || '', skills: parseJson<string[]>(user.skills, []),
       interests: parseJson<string[]>(user.interests, []), roles: parseJson<string[]>(user.roles, []),
-      availability: user.availability || '', socialLinks: parseJson<{ name: string; url: string }[]>(user.socialLinks, []),
+      availability: parseAvailability(user.availability),
+      availabilityHours: (user as any).availabilityHours != null ? String((user as any).availabilityHours) : '',
+      socialLinks: parseJson<{ name: string; url: string }[]>(user.socialLinks, []),
       eventHostingPrefs: parseJson<string[]>((user as any).eventHostingPrefs, []),
       cChainAddress: (user as any).cChainAddress || '', developmentGoals: (user as any).developmentGoals || '',
       shippingAddress: (user as any).shippingAddress || '', merchSizes: (user as any).merchSizes || '',
@@ -248,11 +257,15 @@ export default function ProfileSettingsPage() {
     if (!form.xHandle.trim()) { showError('X handle is required'); return }
 
     setSaving(true)
+    const hoursTrimmed = form.availabilityHours.trim()
+    const hoursNum = hoursTrimmed === '' ? null : Number(hoursTrimmed)
     const payload = {
       ...form,
       skills: JSON.stringify(form.skills), interests: JSON.stringify(form.interests),
       roles: JSON.stringify(form.roles), socialLinks: JSON.stringify(form.socialLinks),
       languages: JSON.stringify(form.languages), eventHostingPrefs: JSON.stringify(form.eventHostingPrefs),
+      availability: JSON.stringify(form.availability),
+      availabilityHours: hoursNum != null && Number.isFinite(hoursNum) ? hoursNum : null,
       privacySettings: JSON.stringify(form.privacy),
     }
     const res = await api.put('/api/auth/me', payload)
@@ -313,8 +326,8 @@ export default function ProfileSettingsPage() {
                   {form.username && <p className="text-sm text-zinc-500 mt-1 font-mono">@{form.username}</p>}
                   <div className="flex items-center gap-4 mt-2 flex-wrap text-sm text-zinc-600 dark:text-zinc-400">
                     {form.country && <span className="inline-flex items-center gap-1.5"><MapPin size={13} className="text-zinc-500" />{form.city ? `${form.city}, ` : ''}{form.country}</span>}
-                    {form.xHandle && <span className="inline-flex items-center gap-1"><Twitter size={13} />@{form.xHandle}</span>}
-                    {form.discord && <span className="inline-flex items-center gap-1"><MessageCircle size={13} />{form.discord}</span>}
+                    {form.xHandle && <span className="inline-flex items-center gap-1"><Twitter size={13} /><SocialLink platform="x" handle={form.xHandle} /></span>}
+                    {form.discord && <span className="inline-flex items-center gap-1"><MessageCircle size={13} /><SocialLink platform="discord" handle={form.discord} /></span>}
                   </div>
                 </div>
                 <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 bg-zinc-900 text-white dark:bg-white dark:text-black font-bold px-5 py-2.5 rounded-lg hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors text-sm cursor-pointer shrink-0">
@@ -354,6 +367,20 @@ export default function ProfileSettingsPage() {
                   )}
                 </div>
                 <div className="space-y-6">
+                  {/* Availability */}
+                  {(form.availability.length > 0 || form.availabilityHours) && (
+                    <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
+                      <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Availability</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {form.availability.map((a) => (
+                          <span key={a} className="px-2.5 py-1 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-xs rounded-md">{a}</span>
+                        ))}
+                        {form.availabilityHours && (
+                          <span className="px-2.5 py-1 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-xs rounded-md">{form.availabilityHours} hrs/wk</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   {/* Roles */}
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
                     <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Roles</h3>
@@ -363,10 +390,10 @@ export default function ProfileSettingsPage() {
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
                     <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Contact</h3>
                     <div className="space-y-2.5 text-sm">
-                      {form.telegram && <div className="flex items-center gap-3"><Send size={14} className="text-zinc-500" /><span className="text-zinc-700 dark:text-zinc-300">{form.telegram}</span></div>}
-                      {form.github && <div className="flex items-center gap-3"><Github size={14} className="text-zinc-500" /><span className="text-zinc-700 dark:text-zinc-300">{form.github}</span></div>}
-                      {form.linkedin && <div className="flex items-center gap-3"><Globe size={14} className="text-zinc-500" /><span className="text-zinc-700 dark:text-zinc-300">LinkedIn: {form.linkedin}</span></div>}
-                      {form.website && <div className="flex items-center gap-3"><Globe size={14} className="text-zinc-500" /><span className="text-zinc-700 dark:text-zinc-300">{form.website}</span></div>}
+                      {form.telegram && <div className="flex items-center gap-3"><Send size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="telegram" handle={form.telegram} /></div>}
+                      {form.github && <div className="flex items-center gap-3"><Github size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="github" handle={form.github} /></div>}
+                      {form.linkedin && <div className="flex items-center gap-3"><Globe size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="linkedin" handle={form.linkedin} showLabel /></div>}
+                      {form.website && <div className="flex items-center gap-3"><Globe size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="website" handle={form.website} /></div>}
                     </div>
                   </div>
                 </div>
@@ -456,11 +483,41 @@ export default function ProfileSettingsPage() {
                   <input className={inputClass} value={form.city} onChange={(e) => updateField('city', e.target.value)} placeholder="City" />
                 </FieldRow>
               </div>
+              <FieldRow label="State / Province / Region" privacy={getPrivacy('state')} onPrivacyChange={(v) => setPrivacy('state', v)}>
+                <input className={inputClass} value={form.state} onChange={(e) => updateField('state', e.target.value)} placeholder="State or province" />
+              </FieldRow>
+              <div className="space-y-3">
+                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Availability</label>
+                <div className="flex flex-wrap gap-2">
+                  {AVAILABILITY_OPTIONS.map((opt) => {
+                    const selected = form.availability.includes(opt)
+                    return (
+                      <button key={opt} type="button"
+                        onClick={() => updateField('availability', selected ? form.availability.filter((x) => x !== opt) : [...form.availability, opt])}
+                        className={`px-3 py-1.5 text-sm rounded-lg border transition-colors cursor-pointer ${selected ? 'bg-red-500 border-red-500 text-white dark:bg-red-500 dark:border-red-500 dark:text-white' : 'bg-white border-zinc-200 text-zinc-700 hover:border-zinc-300 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-zinc-700'}`}>
+                        {selected && <Check size={12} className="inline mr-1.5" />}{opt}
+                      </button>
+                    )
+                  })}
+                  {form.availability.filter((v) => !(AVAILABILITY_OPTIONS as readonly string[]).includes(v)).map((custom) => (
+                    <button key={custom} type="button"
+                      onClick={() => updateField('availability', form.availability.filter((x) => x !== custom))}
+                      className="px-3 py-1.5 text-sm rounded-lg border bg-red-500 border-red-500 text-white cursor-pointer">
+                      <Check size={12} className="inline mr-1.5" />{custom}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <FieldRow label="State / Province / Region" privacy={getPrivacy('state')} onPrivacyChange={(v) => setPrivacy('state', v)}>
-                  <input className={inputClass} value={form.state} onChange={(e) => updateField('state', e.target.value)} placeholder="State or province" />
+                <FieldRow label="Hours per week (optional)">
+                  <input
+                    type="number" min={1} max={168}
+                    className={inputClass}
+                    value={form.availabilityHours}
+                    onChange={(e) => updateField('availabilityHours', e.target.value)}
+                    placeholder="e.g. 5"
+                  />
                 </FieldRow>
-                <FieldRow label="Availability"><select className={`${inputClass} appearance-none cursor-pointer`} value={form.availability} onChange={(e) => updateField('availability', e.target.value)}>{AVAILABILITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></FieldRow>
               </div>
             </div>
 

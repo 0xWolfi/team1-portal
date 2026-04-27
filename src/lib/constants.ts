@@ -44,6 +44,20 @@ export const ADMIN_NAV = {
   ],
 } as const
 
+export const AVAILABILITY_OPTIONS = [
+  'Open to Hack',
+  'Just Exploring',
+  'Open to Collab',
+  'Open to Hire',
+  'Open to Mentor',
+  'Open to Speak / Workshop',
+  'Available for Bounties',
+  'Building Solo',
+  'Not Available',
+] as const
+
+export type AvailabilityOption = typeof AVAILABILITY_OPTIONS[number]
+
 export const COUNTRIES = [
   'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola',
   'Antigua and Barbuda', 'Argentina', 'Armenia', 'Australia', 'Austria',

@@ -25,6 +25,7 @@ export const ALWAYS_PUBLIC_FIELDS = new Set([
   'xHandle',
   'roles',
   'availability',
+  'availabilityHours',
   'status',
   'createdAt',
 ])

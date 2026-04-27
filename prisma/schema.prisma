@@ -57,7 +57,8 @@ model User {
   skills        String?  // JSON array
   interests     String?  // JSON array
   roles         String?  // JSON array
-  availability  String?  // e.g., "Open to Hack", "Just Exploring"
+  availability  String?  // JSON array of preset options e.g. ["Open to Hack","Open to Collab"]
+  availabilityHours Int?  // optional hours per week
   socialLinks   String?  // JSON array of {name, url} for any custom links
   eventHostingPrefs String? // JSON array e.g. ["Meetup","Workshop","Hackathon"]
 
