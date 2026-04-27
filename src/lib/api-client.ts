@@ -43,6 +43,10 @@ class ApiClient {
     return this.fetch<T>(url, { method: 'PUT', body: body ? JSON.stringify(body) : undefined })
   }
 
+  async patch<T = unknown>(url: string, body?: unknown) {
+    return this.fetch<T>(url, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined })
+  }
+
   async del<T = unknown>(url: string) {
     return this.fetch<T>(url, { method: 'DELETE' })
   }

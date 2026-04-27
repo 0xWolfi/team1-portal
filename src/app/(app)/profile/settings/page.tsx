@@ -10,7 +10,8 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { useToast } from '@/context/toast-context'
 import { api } from '@/lib/api-client'
-import { getInitials, getRoleBadgeColor, formatDate } from '@/lib/helpers'
+import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
+import { AvatarUpload } from '@/components/profile/avatar-upload'
 import Link from 'next/link'
 import type { PrivacyLevel, MemberActivity } from '@/types'
 
@@ -230,6 +231,16 @@ export default function ProfileSettingsPage() {
   const getPrivacy = (field: string, fallback: PrivacyLevel = 'members'): PrivacyLevel => form.privacy[field] || fallback
   const setPrivacy = (field: string, value: PrivacyLevel) => updateField('privacy', { ...form.privacy, [field]: value })
 
+  const handleAvatarUpload = async (url: string) => {
+    const res = await api.put('/api/auth/me', { avatarUrl: url })
+    if (res.success) {
+      await refreshUser()
+      success('Profile picture updated!')
+    } else {
+      showError(res.error || 'Failed to save profile picture')
+    }
+  }
+
   const handleSave = async () => {
     if (!form.displayName.trim()) { showError('Display name is required'); return }
     if (!form.country) { showError('Country is required'); return }
@@ -286,9 +297,12 @@ export default function ProfileSettingsPage() {
             {/* Header */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-100 to-red-50 border border-red-200 text-red-700 dark:from-red-500/20 dark:to-red-600/10 dark:border-red-500/20 dark:text-red-400 flex items-center justify-center font-bold text-2xl shrink-0">
-                  {user?.avatarUrl ? <img src={user.avatarUrl} alt="" className="w-full h-full rounded-full object-cover" /> : getInitials(form.displayName || 'U')}
-                </div>
+                <AvatarUpload
+                  currentAvatarUrl={user?.avatarUrl}
+                  displayName={form.displayName || 'U'}
+                  onUploadComplete={handleAvatarUpload}
+                  size="lg"
+                />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">{form.displayName}</h1>

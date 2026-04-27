@@ -116,10 +116,20 @@ export const notificationUpdateSchema = z.object({
   id: z.string().optional(),
 })
 
+// Admin user update (status, admin notes, regional TG flag, cohort)
+export const userStatusEnum = z.enum(['active', 'flagged', 'paused', 'inactive', 'removed'])
+export const adminUserUpdateSchema = z.object({
+  status: userStatusEnum.optional(),
+  adminNotes: z.string().max(5000).optional().nullable(),
+  cohort: z.union([z.number(), z.string()]).optional().nullable(),
+  inRegionalTg: z.boolean().optional().nullable(),
+})
+
 // Self-editable profile fields
 export const selfEditableProfileSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
   username: z.string().min(1).max(50).optional(),
+  avatarUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   bio: z.string().max(500).optional().nullable(),
   title: z.string().max(100).optional().nullable(),
   country: z.string().max(100).optional().nullable(),

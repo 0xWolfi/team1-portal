@@ -4,15 +4,39 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Search, Plus, Trash2, X } from 'lucide-react'
 import { useApi, useMutation } from '@/hooks/use-api'
 import { useToast } from '@/context/toast-context'
+import { api } from '@/lib/api-client'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PageLoader } from '@/components/ui/spinner'
 import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
 import type { Region } from '@/types'
+
+type MemberStatus = 'active' | 'flagged' | 'paused' | 'inactive' | 'removed'
+
+const STATUS_OPTIONS: { value: MemberStatus; label: string }[] = [
+  { value: 'active', label: 'Active' },
+  { value: 'flagged', label: 'Flagged' },
+  { value: 'paused', label: 'Paused' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'removed', label: 'Removed' },
+]
+
+const STATUS_PILL_CLASS: Record<MemberStatus, string> = {
+  active: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
+  flagged: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+  paused: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-500/10 dark:text-zinc-300 dark:border-zinc-500/20',
+  inactive: 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20',
+  removed: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20',
+}
+
+function statusLabel(s: string) {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
 
 interface MembershipItem {
   id: string
@@ -28,13 +52,14 @@ interface MemberEntry {
   role: string
   status: string
   createdAt: string
-  user: { id: string; email: string; displayName: string; username: string | null; avatarUrl: string | null; bio?: string | null; createdAt?: string }
+  user: { id: string; email: string; displayName: string; username: string | null; avatarUrl: string | null; bio?: string | null; createdAt?: string; status?: MemberStatus; isActive?: boolean }
   memberships: MembershipItem[]
 }
 
 export default function AdminMembersPage() {
   const [search, setSearch] = useState('')
   const [regionFilter, setRegionFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'' | MemberStatus>('')
   const { data: regions } = useApi<Region[]>('/api/regions')
   const { data: result, loading, refetch } = useApi<{ items: MemberEntry[]; total: number }>(
     `/api/admin/members?page=1${search ? `&search=${search}` : ''}${regionFilter ? `&regionId=${regionFilter}` : ''}`,
@@ -52,6 +77,46 @@ export default function AdminMembersPage() {
 
   // Delete confirm state (removing a single membership)
   const [deleteTarget, setDeleteTarget] = useState<{ member: MemberEntry; membership: MembershipItem } | null>(null)
+
+  // Status update state
+  const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
+  const [pendingRemoval, setPendingRemoval] = useState<{ member: MemberEntry } | null>(null)
+
+  const updateMemberStatus = async (member: MemberEntry, next: MemberStatus) => {
+    setStatusUpdating(member.user.id)
+    const res = await api.fetch<{ id: string; status?: MemberStatus; isActive?: boolean }>(
+      `/api/admin/users/${member.user.id}`,
+      { method: 'PATCH', body: JSON.stringify({ status: next }) },
+    )
+    setStatusUpdating(null)
+    if (res.success) {
+      success(`Status updated to ${statusLabel(next)}`)
+      if (selectedMember && selectedMember.user.id === member.user.id) {
+        setSelectedMember({
+          ...selectedMember,
+          user: { ...selectedMember.user, status: next, isActive: res.data?.isActive ?? selectedMember.user.isActive },
+        })
+      }
+      refetch()
+    } else {
+      showError(res.error || 'Failed to update status')
+    }
+  }
+
+  const handleStatusChange = async (member: MemberEntry, next: MemberStatus) => {
+    if (next === 'removed') {
+      setPendingRemoval({ member })
+      return
+    }
+    await updateMemberStatus(member, next)
+  }
+
+  const confirmRemoval = async () => {
+    if (!pendingRemoval) return
+    const m = pendingRemoval.member
+    setPendingRemoval(null)
+    await updateMemberStatus(m, 'removed')
+  }
 
   const handleAddMember = async () => {
     if (!addForm.email) {
@@ -116,18 +181,25 @@ export default function AdminMembersPage() {
           <option value="">All regions</option>
           {regions?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
+        <select className="h-10 px-3 bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as '' | MemberStatus)}>
+          <option value="">All statuses</option>
+          {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
       </div>
 
       {loading ? <PageLoader /> : (
         <Card className="overflow-hidden p-0">
           <div className="divide-y divide-zinc-200 dark:divide-zinc-700/50">
-            {result?.items.map((m) => {
+            {result?.items
+              .filter((m) => !statusFilter || (m.user.status || 'active') === statusFilter)
+              .map((m) => {
               const visibleRegions = m.memberships.slice(0, 3)
               const extraCount = m.memberships.length - visibleRegions.length
               const topRole = m.memberships.find((x) => x.role === 'lead')?.role
                 || m.memberships.find((x) => x.role === 'co_lead')?.role
                 || m.memberships[0]?.role
                 || m.role
+              const userStatus = (m.user.status || 'active') as MemberStatus
               return (
                 <div
                   key={m.user.id}
@@ -154,6 +226,9 @@ export default function AdminMembersPage() {
                   </div>
                   <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(topRole)}`}>
                     {topRole === 'co_lead' ? 'Co-Lead' : topRole.charAt(0).toUpperCase() + topRole.slice(1)}
+                  </span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider ${STATUS_PILL_CLASS[userStatus]}`}>
+                    {statusUpdating === m.user.id ? '…' : statusLabel(userStatus)}
                   </span>
                   <span className="text-[10px] text-zinc-500">{formatDate(m.createdAt)}</span>
                 </div>
@@ -265,6 +340,26 @@ export default function AdminMembersPage() {
                   )}
                 </div>
 
+                <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-zinc-500">Status</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider ${STATUS_PILL_CLASS[(selectedMember.user.status || 'active') as MemberStatus]}`}>
+                      {statusLabel(selectedMember.user.status || 'active')}
+                    </span>
+                  </div>
+                  <select
+                    className="w-full h-10 px-3 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-white/10 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500 disabled:opacity-50"
+                    value={selectedMember.user.status || 'active'}
+                    disabled={statusUpdating === selectedMember.user.id}
+                    onChange={(e) => handleStatusChange(selectedMember, e.target.value as MemberStatus)}
+                  >
+                    {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                  <p className="text-[11px] text-zinc-500">
+                    Inactive and Removed members cannot log in and are hidden from the directory.
+                  </p>
+                </div>
+
                 <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-zinc-500">Regions & Roles</p>
@@ -304,6 +399,17 @@ export default function AdminMembersPage() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Removed-status confirm */}
+      <ConfirmDialog
+        open={!!pendingRemoval}
+        onClose={() => setPendingRemoval(null)}
+        onConfirm={confirmRemoval}
+        title="Mark member as removed?"
+        message={`This will block ${pendingRemoval?.member.user.displayName || 'this user'} from logging in and hide them from the directory. You can re-activate them later by changing their status back to Active.`}
+        confirmLabel="Mark Removed"
+        loading={statusUpdating === pendingRemoval?.member.user.id}
+      />
 
       {/* Delete Confirmation Modal */}
       <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="Remove Membership" size="sm">

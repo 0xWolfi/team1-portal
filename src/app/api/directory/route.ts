@@ -25,16 +25,18 @@ export async function GET(request: Request) {
       if (region) regionId = region.id
     }
 
-    const where: Record<string, unknown> = { status: 'accepted' }
-    if (regionId) where.regionId = regionId
-    if (search) {
-      where.user = {
-        OR: [
-          { displayName: { contains: search, mode: 'insensitive' } },
-          { username: { contains: search, mode: 'insensitive' } },
-        ],
-      }
+    const userFilter: Record<string, unknown> = {
+      isActive: true,
+      status: { notIn: ['inactive', 'removed'] },
     }
+    if (search) {
+      userFilter.OR = [
+        { displayName: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+      ]
+    }
+    const where: Record<string, unknown> = { status: 'accepted', user: userFilter }
+    if (regionId) where.regionId = regionId
 
     const memberships = await prisma.userRegionMembership.findMany({
       where,

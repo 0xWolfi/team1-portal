@@ -5,13 +5,23 @@ import { recordAudit, getRequestIp } from '@/lib/audit'
 /**
  * PATCH /api/admin/users/[id]
  *
- * Admin-only fields (status enum, admin notes, regional-TG flag, cohort).
- * Region leads may only set `inRegionalTg` for members in their region.
+ * Admin + region-lead fields (status enum, admin notes, regional-TG flag, cohort).
+ * Region leads may set status (for members in their region) and `inRegionalTg`;
+ * super admins may set anything in the list.
  */
 
-const ADMIN_ONLY_FIELDS = ['status', 'adminNotes', 'cohort'] as const
-const LEAD_OR_ADMIN_FIELDS = ['inRegionalTg'] as const
-const ALL_FIELDS = [...ADMIN_ONLY_FIELDS, ...LEAD_OR_ADMIN_FIELDS] as const
+const ADMIN_OR_LEAD_FIELDS = ['status', 'inRegionalTg'] as const
+const ADMIN_ONLY_FIELDS = ['adminNotes', 'cohort'] as const
+const ALL_FIELDS = [...ADMIN_OR_LEAD_FIELDS, ...ADMIN_ONLY_FIELDS] as const
+
+const VALID_STATUSES = ['active', 'flagged', 'paused', 'inactive', 'removed'] as const
+const STATUS_TO_IS_ACTIVE: Record<(typeof VALID_STATUSES)[number], boolean> = {
+  active: true,
+  flagged: true,
+  paused: true,
+  inactive: false,
+  removed: false,
+}
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,7 +33,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const { id: targetUserId } = await params
     const body = await request.json()
 
-    // Region-lead can only touch lead-or-admin fields, and only for members in their region.
+    // Region-lead can only touch admin-or-lead fields, and only for members in their region.
     if (!isAdmin) {
       const touchesAdminOnly = ADMIN_ONLY_FIELDS.some((f) => body[f] !== undefined)
       if (touchesAdminOnly) return apiError('Forbidden', 403)
@@ -46,7 +56,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     for (const f of ALL_FIELDS) {
       if (body[f] !== undefined) data[f] = body[f]
     }
-    if (data.status !== undefined && !['active', 'flagged', 'paused', 'inactive', 'removed'].includes(String(data.status))) {
+    if (data.status !== undefined && !VALID_STATUSES.includes(data.status as (typeof VALID_STATUSES)[number])) {
       return apiError('Invalid status value', 422)
     }
     if (data.cohort !== undefined && data.cohort !== null) {
@@ -58,9 +68,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       return apiError('No editable fields supplied', 422)
     }
 
+    // When status changes, mirror it onto isActive so login/directory filters stay in sync.
+    if (data.status !== undefined) {
+      const statusKey = data.status as (typeof VALID_STATUSES)[number]
+      data.isActive = STATUS_TO_IS_ACTIVE[statusKey]
+    }
+
     const before = await prisma.user.findUnique({
       where: { id: targetUserId },
-      select: { status: true, adminNotes: true, cohort: true, inRegionalTg: true, displayName: true },
+      select: { status: true, isActive: true, adminNotes: true, cohort: true, inRegionalTg: true, displayName: true },
     })
     if (!before) return apiError('User not found', 404)
 

@@ -175,8 +175,12 @@ export function Sidebar({ isAdmin }: SidebarProps) {
           href="/profile/settings"
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-500 dark:hover:text-zinc-200 dark:hover:bg-white/[0.04]"
         >
-          <div className="w-7 h-7 rounded-full bg-brand-500/15 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0">
-            {user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
+          <div className="w-7 h-7 rounded-full bg-brand-500/15 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold shrink-0 overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full object-cover" />
+            ) : (
+              user?.displayName?.charAt(0)?.toUpperCase() || 'U'
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate text-zinc-800 dark:text-zinc-300">{user?.displayName || 'Profile'}</p>
@@ -216,8 +220,12 @@ export function Sidebar({ isAdmin }: SidebarProps) {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <div className="w-8 h-8 rounded-full bg-brand-500/15 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold">
-            {user?.displayName?.charAt(0)?.toUpperCase() || 'U'}
+          <div className="w-8 h-8 rounded-full bg-brand-500/15 dark:bg-brand-500/20 flex items-center justify-center text-brand-600 dark:text-brand-400 text-xs font-bold overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={user.avatarUrl} alt={user.displayName} className="w-full h-full object-cover" />
+            ) : (
+              user?.displayName?.charAt(0)?.toUpperCase() || 'U'
+            )}
           </div>
         </div>
       </header>

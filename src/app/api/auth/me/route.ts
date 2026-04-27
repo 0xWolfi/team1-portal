@@ -5,7 +5,7 @@ import { selfEditableProfileSchema } from '@/lib/validations'
 
 // Fields the user themselves can edit on their own profile.
 const SELF_EDITABLE_FIELDS = [
-  'displayName', 'username', 'bio', 'title',
+  'displayName', 'username', 'avatarUrl', 'bio', 'title',
   'country', 'discord', 'xHandle',
   'city', 'state',
   'studentStatus', 'university', 'languages', 'cohort',

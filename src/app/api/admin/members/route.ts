@@ -44,6 +44,8 @@ export async function GET(request: Request) {
           username: true,
           avatarUrl: true,
           bio: true,
+          status: true,
+          isActive: true,
           createdAt: true,
           memberships: {
             where: { status: 'accepted' },
