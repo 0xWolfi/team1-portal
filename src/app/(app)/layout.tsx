@@ -19,9 +19,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthGuard requireAdmin={isAdmin} allowRegionLead={isAdmin}>
-      <div className="min-h-[100svh] text-white relative font-sans selection:bg-white/20">
+      <div className="min-h-[100svh] text-zinc-900 dark:text-white relative font-sans selection:bg-zinc-900/15 dark:selection:bg-white/20">
         {/* Background gradient */}
-        <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-black/80 via-black/50 to-transparent pointer-events-none z-0" />
+        <div className="fixed top-0 left-0 w-full h-[500px] bg-gradient-to-b from-zinc-100/80 via-zinc-50/40 to-transparent dark:from-black/80 dark:via-black/50 dark:to-transparent pointer-events-none z-0" />
 
         {/* Sidebar */}
         <Sidebar isAdmin={isAdmin} />

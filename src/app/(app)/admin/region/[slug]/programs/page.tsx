@@ -48,8 +48,8 @@ export default function RegionProgramsAdminPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-medium text-white flex items-center gap-2"><Briefcase size={24} className="text-red-500" /> Programs</h1>
-        <p className="text-sm text-zinc-400 mt-1">Manage programs for {slug}</p></div>
+        <div><h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><Briefcase size={24} className="text-red-500" /> Programs</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Manage programs for {slug}</p></div>
         <Button onClick={() => { setEditId(null); setForm(defaultForm); setModal(true) }}><Plus size={16} /> New Program</Button>
       </motion.div>
 
@@ -57,12 +57,12 @@ export default function RegionProgramsAdminPage({ params }: { params: Promise<{ 
         <div className="space-y-3">{programs.map((p) => (
           <Card key={p.id} className="flex items-center justify-between">
             <div className="flex-1"><div className="flex items-center gap-2 mb-1">
-              <h3 className="text-sm font-medium text-white">{p.title}</h3>
+              <h3 className="text-sm font-medium text-zinc-900 dark:text-white">{p.title}</h3>
               <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getStatusBadgeColor(p.status)}`}>{p.status}</span>
-            </div>{p.description && <p className="text-xs text-zinc-400 line-clamp-1">{p.description}</p>}</div>
+            </div>{p.description && <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">{p.description}</p>}</div>
             <div className="flex gap-1">
               <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit size={14} /></Button>
-              <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}><Trash2 size={14} className="text-red-400" /></Button>
+              <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}><Trash2 size={14} className="text-red-600 dark:text-red-400" /></Button>
             </div>
           </Card>
         ))}</div>
@@ -78,8 +78,8 @@ export default function RegionProgramsAdminPage({ params }: { params: Promise<{ 
             <Input label="Benefits" value={form.benefits} onChange={(e) => setForm({ ...form, benefits: e.target.value })} />
           </div>
           <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1.5"><label className="block text-sm text-zinc-300 font-medium">Status</label>
-              <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+            <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Status</label>
+              <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="draft">Draft</option><option value="active">Active</option><option value="completed">Completed</option>
               </select></div>
             <Input label="Start Date" type="date" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />

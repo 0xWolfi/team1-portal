@@ -14,34 +14,34 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
-        <p className="text-sm text-zinc-400 mt-1">Manage the team1 portal</p>
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Admin Dashboard</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Manage the team1 portal</p>
       </div>
 
       {isSuperAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Link href="/admin/members" className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all group">
+          <Link href="/admin/members" className="p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-white/5 rounded-lg border border-white/5"><Users size={20} className="text-zinc-200" /></div>
-              <ArrowRight size={16} className="ml-auto text-zinc-600 group-hover:text-white transition-colors" />
+              <div className="p-2 bg-zinc-100 border border-zinc-200 dark:bg-white/5 dark:border-white/5 rounded-lg"><Users size={20} className="text-zinc-700 dark:text-zinc-200" /></div>
+              <ArrowRight size={16} className="ml-auto text-zinc-400 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-bold text-white">{memberData?.total || 0}</p>
+            <p className="text-3xl font-bold text-zinc-900 dark:text-white">{memberData?.total || 0}</p>
             <p className="text-sm text-zinc-500">Total Members</p>
           </Link>
-          <Link href="/admin/regions" className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all group">
+          <Link href="/admin/regions" className="p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-white/5 rounded-lg border border-white/5"><Globe size={20} className="text-zinc-200" /></div>
-              <ArrowRight size={16} className="ml-auto text-zinc-600 group-hover:text-white transition-colors" />
+              <div className="p-2 bg-zinc-100 border border-zinc-200 dark:bg-white/5 dark:border-white/5 rounded-lg"><Globe size={20} className="text-zinc-700 dark:text-zinc-200" /></div>
+              <ArrowRight size={16} className="ml-auto text-zinc-400 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-bold text-white">{regions?.length || 0}</p>
+            <p className="text-3xl font-bold text-zinc-900 dark:text-white">{regions?.length || 0}</p>
             <p className="text-sm text-zinc-500">Regions</p>
           </Link>
-          <Link href="/admin/applications" className="p-6 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all group">
+          <Link href="/admin/applications" className="p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all group">
             <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-white/5 rounded-lg border border-white/5"><ClipboardList size={20} className="text-zinc-200" /></div>
-              <ArrowRight size={16} className="ml-auto text-zinc-600 group-hover:text-white transition-colors" />
+              <div className="p-2 bg-zinc-100 border border-zinc-200 dark:bg-white/5 dark:border-white/5 rounded-lg"><ClipboardList size={20} className="text-zinc-700 dark:text-zinc-200" /></div>
+              <ArrowRight size={16} className="ml-auto text-zinc-400 group-hover:text-zinc-900 dark:text-zinc-600 dark:group-hover:text-white transition-colors" />
             </div>
-            <p className="text-3xl font-bold text-white">{appData?.total || 0}</p>
+            <p className="text-3xl font-bold text-zinc-900 dark:text-white">{appData?.total || 0}</p>
             <p className="text-sm text-zinc-500">Pending Apps</p>
           </Link>
         </div>
@@ -49,11 +49,11 @@ export default function AdminDashboardPage() {
 
       {/* Regions */}
       <div>
-        <h2 className="text-lg font-bold text-white mb-4">Region Overview</h2>
+        <h2 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Region Overview</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {regions?.map((r) => (
-            <Link key={r.id} href={`/admin/region/${r.slug}/members`} className="p-5 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all">
-              <h3 className="text-base font-bold text-white mb-1">{r.name}</h3>
+            <Link key={r.id} href={`/admin/region/${r.slug}/members`} className="p-5 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-white mb-1">{r.name}</h3>
               <p className="text-xs text-zinc-500">{r.country} · {r._count?.memberships || 0} members</p>
             </Link>
           ))}

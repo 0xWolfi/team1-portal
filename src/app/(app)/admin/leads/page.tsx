@@ -37,8 +37,8 @@ export default function AdminLeadsPage() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium text-white flex items-center gap-2"><Shield size={24} className="text-red-500" /> Country Leads</h1>
-          <p className="text-sm text-zinc-400 mt-1">Assign leads to manage their regions</p>
+          <h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><Shield size={24} className="text-red-500" /> Country Leads</h1>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Assign leads to manage their regions</p>
         </div>
         <Button onClick={() => setModal(true)}><Plus size={16} /> Assign Lead</Button>
       </motion.div>
@@ -49,19 +49,19 @@ export default function AdminLeadsPage() {
             <Card key={region.id}>
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="text-base font-medium text-white">{region.name}</h3>
-                  <p className="text-xs text-zinc-400">{region.country} &middot; {region._count?.memberships || 0} members</p>
+                  <h3 className="text-base font-medium text-zinc-900 dark:text-white">{region.name}</h3>
+                  <p className="text-xs text-zinc-600 dark:text-zinc-400">{region.country} &middot; {region._count?.memberships || 0} members</p>
                 </div>
               </div>
               {region.memberships?.length > 0 ? (
                 <div className="space-y-2">
                   {region.memberships.map((m: any) => (
-                    <div key={m.id} className="flex items-center justify-between py-2 px-3 bg-zinc-950 rounded-lg">
+                    <div key={m.id} className="flex items-center justify-between py-2 px-3 bg-zinc-50 dark:bg-zinc-950 rounded-lg">
                       <div className="flex items-center gap-3">
                         <Avatar src={m.user.avatarUrl} name={m.user.displayName} size="sm" />
                         <div>
-                          <p className="text-sm text-white">{m.user.displayName}</p>
-                          <p className="text-xs text-zinc-400">{m.user.email}</p>
+                          <p className="text-sm text-zinc-900 dark:text-white">{m.user.displayName}</p>
+                          <p className="text-xs text-zinc-600 dark:text-zinc-400">{m.user.email}</p>
                         </div>
                         <Badge variant={m.role === 'lead' ? 'danger' : 'warning'}>{m.role === 'co_lead' ? 'Co-Lead' : 'Lead'}</Badge>
                       </div>
@@ -80,8 +80,8 @@ export default function AdminLeadsPage() {
       <Modal open={modal} onClose={() => setModal(false)} title="Assign Country Lead">
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <label className="block text-sm text-zinc-300 font-medium">Region</label>
-            <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)}>
+            <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Region</label>
+            <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={selectedRegion} onChange={(e) => setSelectedRegion(e.target.value)}>
               <option value="">Select region</option>
               {regions?.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>

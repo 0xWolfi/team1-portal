@@ -54,8 +54,8 @@ export default function RegionPlaybooksAdminPage({ params }: { params: Promise<{
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-medium text-white flex items-center gap-2"><BookOpen size={24} className="text-red-500" /> Playbooks</h1>
-        <p className="text-sm text-zinc-400 mt-1">Manage playbooks for {slug}</p></div>
+        <div><h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><BookOpen size={24} className="text-red-500" /> Playbooks</h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Manage playbooks for {slug}</p></div>
         <Button onClick={() => { setEditId(null); setForm(defaultForm); setModal(true) }}><Plus size={16} /> New Playbook</Button>
       </motion.div>
 
@@ -65,16 +65,16 @@ export default function RegionPlaybooksAdminPage({ params }: { params: Promise<{
             <Card key={p.id} className="flex items-center justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-medium text-white">{p.title}</h3>
+                  <h3 className="text-sm font-medium text-zinc-900 dark:text-white">{p.title}</h3>
                   <Badge variant={p.status === 'published' ? 'success' : 'warning'}>{p.status}</Badge>
                   <Badge>{p.visibility}</Badge>
                 </div>
-                {p.description && <p className="text-xs text-zinc-400 line-clamp-1">{p.description}</p>}
+                {p.description && <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-1">{p.description}</p>}
                 <p className="text-[10px] text-zinc-500 mt-1">{formatDate(p.createdAt)}</p>
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="sm" onClick={() => handleEdit(p)}><Edit size={14} /></Button>
-                <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}><Trash2 size={14} className="text-red-400" /></Button>
+                <Button variant="ghost" size="sm" onClick={() => handleDelete(p.id)}><Trash2 size={14} className="text-red-600 dark:text-red-400" /></Button>
               </div>
             </Card>
           ))}
@@ -87,13 +87,13 @@ export default function RegionPlaybooksAdminPage({ params }: { params: Promise<{
           <Textarea label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           <Textarea label="Content (Markdown)" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="min-h-[200px] font-mono text-xs" />
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5"><label className="block text-sm text-zinc-300 font-medium">Visibility</label>
-              <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })}>
+            <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Visibility</label>
+              <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={form.visibility} onChange={(e) => setForm({ ...form, visibility: e.target.value })}>
                 <option value="member">Member Only</option><option value="public">Public</option>
               </select>
             </div>
-            <div className="space-y-1.5"><label className="block text-sm text-zinc-300 font-medium">Status</label>
-              <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
+            <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Status</label>
+              <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
                 <option value="draft">Draft</option><option value="published">Published</option>
               </select>
             </div>

@@ -14,7 +14,7 @@ const ACTIVITY_TYPES = [
 ]
 
 const inputClass =
-  'w-full bg-zinc-900/50 border border-white/5 rounded-xl px-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10'
+  'w-full bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-white/10'
 
 interface Props {
   onCreated?: (activity: MemberActivity) => void
@@ -64,17 +64,17 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
 
       {open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative w-full max-w-md bg-zinc-900 border border-zinc-700 rounded-2xl shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
-              <h2 className="text-lg font-medium text-white">Add Activity</h2>
-              <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-white cursor-pointer">
+          <div className="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="relative w-full max-w-md bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 rounded-2xl shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/5">
+              <h2 className="text-lg font-medium text-zinc-900 dark:text-white">Add Activity</h2>
+              <button onClick={() => setOpen(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer">
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-sm text-zinc-300 font-medium">Type</label>
+                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Type</label>
                 <select
                   className={`${inputClass} appearance-none cursor-pointer`}
                   value={form.type}
@@ -88,7 +88,7 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
                 </select>
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm text-zinc-300 font-medium">Title *</label>
+                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Title *</label>
                 <input
                   className={inputClass}
                   value={form.title}
@@ -97,7 +97,7 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="block text-sm text-zinc-300 font-medium">Description</label>
+                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Description</label>
                 <textarea
                   className={`${inputClass} min-h-[60px] resize-y`}
                   value={form.description}
@@ -107,7 +107,7 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="block text-sm text-zinc-300 font-medium">Date *</label>
+                  <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Date *</label>
                   <input
                     type="date"
                     className={inputClass}
@@ -116,7 +116,7 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-sm text-zinc-300 font-medium">Link</label>
+                  <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Link</label>
                   <input
                     className={inputClass}
                     value={form.link}
@@ -128,7 +128,7 @@ export function AddActivityButton({ onCreated, className = '' }: Props) {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   onClick={() => setOpen(false)}
-                  className="px-4 py-2 text-sm text-zinc-400 hover:text-white cursor-pointer"
+                  className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"
                 >
                   Cancel
                 </button>

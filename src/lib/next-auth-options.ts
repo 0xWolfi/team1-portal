@@ -23,9 +23,18 @@ export const authOptions: NextAuthOptions = {
 
       const email = user.email.toLowerCase().trim()
 
-      // Check if user already exists in DB (existing member or admin)
+      // Existing user (added by an admin or previously signed in) — allow.
+      // Backfill avatar/emailVerified/displayName the first time they actually log in.
       const existingUser = await prisma.user.findUnique({ where: { email } })
-      if (existingUser) return true
+      if (existingUser) {
+        const updates: Record<string, unknown> = {}
+        if (!existingUser.emailVerified) updates.emailVerified = true
+        if (!existingUser.avatarUrl && user.image) updates.avatarUrl = user.image
+        if (Object.keys(updates).length > 0) {
+          await prisma.user.update({ where: { id: existingUser.id }, data: updates })
+        }
+        return true
+      }
 
       // Auto-whitelist all @team1.network emails — create as pending, require admin approval
       if (email.endsWith('@team1.network')) {
@@ -52,27 +61,8 @@ export const authOptions: NextAuthOptions = {
         return true
       }
 
-      // Check if email is in the roster whitelist
-      const rosterEntry = await prisma.memberRoster.findUnique({ where: { email } })
-      if (rosterEntry) {
-        // Create user from roster entry
-        await prisma.user.create({
-          data: {
-            email,
-            displayName: rosterEntry.name || user.name || email.split('@')[0],
-            avatarUrl: user.image || null,
-            emailVerified: true,
-          },
-        })
-        // Mark roster entry as used
-        await prisma.memberRoster.update({
-          where: { id: rosterEntry.id },
-          data: { isUsed: true },
-        })
-        return true
-      }
-
-      // Not in roster — deny login (generic error to prevent account enumeration)
+      // Non-team1.network email with no existing User row — deny.
+      // Admins must add the member first via the All Members page, which creates a User row upfront.
       return false
     },
     async jwt({ token, account, user }) {

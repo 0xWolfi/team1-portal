@@ -23,7 +23,7 @@ export function Avatar({ src, name, size = 'md', className }: AvatarProps) {
     return <img src={safeSrc} alt={name} className={cn('rounded-full object-cover', sizes[size], className)} />
   }
   return (
-    <div className={cn('rounded-full bg-red-500/20 text-red-400 flex items-center justify-center font-medium shrink-0', sizes[size], className)}>
+    <div className={cn('rounded-full bg-red-500/15 text-red-600 dark:bg-red-500/20 dark:text-red-400 flex items-center justify-center font-medium shrink-0', sizes[size], className)}>
       {getInitials(name)}
     </div>
   )

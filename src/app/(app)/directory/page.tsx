@@ -69,16 +69,16 @@ function DirectoryContent() {
 
   return (
     <div>
-      <Link href="/dashboard" className="inline-flex items-center gap-2 text-zinc-500 hover:text-white transition-colors mb-8 text-sm font-medium hover:-translate-x-1 duration-200">
+      <Link href="/dashboard" className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors mb-8 text-sm font-medium hover:-translate-x-1 duration-200">
         <ArrowLeft size={16} /> Back to Dashboard
       </Link>
 
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 bg-white/5 rounded-lg border border-white/5"><Users size={20} className="text-zinc-200" /></div>
+          <div className="p-2 bg-zinc-100 border border-zinc-200 dark:bg-white/5 dark:border-white/5 rounded-lg"><Users size={20} className="text-zinc-700 dark:text-zinc-200" /></div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Members Directory</h1>
-            <p className="text-sm text-zinc-400">Connect with fellow community members &middot; {filtered.length} members</p>
+            <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Members Directory</h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Connect with fellow community members &middot; {filtered.length} members</p>
           </div>
         </div>
       </div>
@@ -86,24 +86,24 @@ function DirectoryContent() {
       {/* Search */}
       <div className="relative mb-10 group">
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search size={16} className="text-zinc-500 group-focus-within:text-white transition-colors" />
+          <Search size={16} className="text-zinc-500 group-focus-within:text-zinc-900 dark:group-focus-within:text-white transition-colors" />
         </div>
         <input
-          className="w-full bg-zinc-900/50 border border-white/5 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-white/10 transition-all hover:bg-zinc-900/80"
+          className="w-full bg-white border border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:bg-zinc-900/80 rounded-xl pl-10 pr-4 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-white/10 transition-all"
           placeholder="Search members by name..." value={search} onChange={(e) => setSearch(e.target.value)}
         />
       </div>
 
       {loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-40 rounded-2xl bg-white/5 animate-pulse border border-white/5" />)}
+          {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-40 rounded-2xl bg-zinc-100 border border-zinc-200 dark:bg-white/5 dark:border-white/5 animate-pulse" />)}
         </div>
       )}
 
       {!loading && filtered.length === 0 && (
-        <div className="py-32 text-center border-2 border-white/5 rounded-4xl border-dashed bg-white/5 backdrop-blur-sm flex flex-col items-center max-w-2xl mx-auto">
-          <div className="w-20 h-20 rounded-full bg-black border border-white/10 flex items-center justify-center mb-6"><Search size={32} className="text-zinc-600" /></div>
-          <h3 className="text-zinc-200 text-xl font-bold mb-2">No members found</h3>
+        <div className="py-32 text-center border-2 border-zinc-200 dark:border-white/5 rounded-4xl border-dashed bg-white dark:bg-white/5 backdrop-blur-sm flex flex-col items-center max-w-2xl mx-auto">
+          <div className="w-20 h-20 rounded-full bg-zinc-100 border border-zinc-200 dark:bg-black dark:border-white/10 flex items-center justify-center mb-6"><Search size={32} className="text-zinc-400 dark:text-zinc-600" /></div>
+          <h3 className="text-zinc-900 dark:text-zinc-200 text-xl font-bold mb-2">No members found</h3>
           <p className="text-zinc-500 max-w-xs mx-auto">{search ? `No one matching "${search}".` : 'No members in the directory yet.'}</p>
         </div>
       )}
@@ -114,28 +114,28 @@ function DirectoryContent() {
             const skills = parseJson<string[]>(m.user.skills, [])
             const location = canSee(m.user, 'city') ? [m.user.city, m.user.country].filter(Boolean).join(', ') : (m.user.country || '')
             return (
-              <div key={m.id} className="group p-6 rounded-2xl bg-zinc-900/50 border border-white/5 hover:border-white/20 hover:bg-white/5 transition-all cursor-pointer" onClick={() => setSelectedMember(m)}>
+              <div key={m.id} className="group p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all cursor-pointer" onClick={() => setSelectedMember(m)}>
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-zinc-700/30 to-zinc-800/30 border border-white/10 flex items-center justify-center text-white font-bold text-lg shrink-0 overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-br from-zinc-200 to-zinc-300 border border-zinc-300 text-zinc-900 dark:from-zinc-700/30 dark:to-zinc-800/30 dark:border-white/10 dark:text-white flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
                     {m.user.avatarUrl ? <img src={m.user.avatarUrl} alt="" className="w-full h-full object-cover" /> : m.user.displayName.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate">{m.user.displayName}</h3>
-                    {m.user.username && <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono bg-white/5 px-2 py-0.5 rounded">@{m.user.username}</span>}
+                    <h3 className="text-lg font-bold text-zinc-900 dark:text-white truncate">{m.user.displayName}</h3>
+                    {m.user.username && <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-mono bg-zinc-100 dark:bg-white/5 px-2 py-0.5 rounded">@{m.user.username}</span>}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-zinc-400"><Users size={14} className="text-zinc-600" /><span>{m.region.name}</span></div>
-                  {location && <div className="flex items-center gap-2 text-sm text-zinc-500"><MapPin size={14} className="text-zinc-600" /><span>{location}</span></div>}
+                  <div className="flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-400"><Users size={14} className="text-zinc-400 dark:text-zinc-600" /><span>{m.region.name}</span></div>
+                  {location && <div className="flex items-center gap-2 text-sm text-zinc-500"><MapPin size={14} className="text-zinc-400 dark:text-zinc-600" /><span>{location}</span></div>}
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleBadgeColor(m.role)}`}>{m.role === 'co_lead' ? 'Co-Lead' : m.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                    {m.user.availability && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">{m.user.availability}</span>}
+                    {m.user.availability && <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">{m.user.availability}</span>}
                   </div>
-                  {canSee(m.user, 'bio') && m.user.bio && <p className="text-xs text-zinc-500 line-clamp-2 mt-2">{m.user.bio}</p>}
+                  {canSee(m.user, 'bio') && m.user.bio && <p className="text-xs text-zinc-600 dark:text-zinc-500 line-clamp-2 mt-2">{m.user.bio}</p>}
                   {skills.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {skills.slice(0, 3).map((s) => <span key={s} className="text-[10px] px-2 py-0.5 bg-zinc-900 border border-zinc-800 text-zinc-400 rounded">{s}</span>)}
-                      {skills.length > 3 && <span className="text-[10px] px-2 py-0.5 text-zinc-600">+{skills.length - 3}</span>}
+                      {skills.slice(0, 3).map((s) => <span key={s} className="text-[10px] px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 rounded">{s}</span>)}
+                      {skills.length > 3 && <span className="text-[10px] px-2 py-0.5 text-zinc-500 dark:text-zinc-600">+{skills.length - 3}</span>}
                     </div>
                   )}
                 </div>
@@ -165,43 +165,43 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
 
   const SocialRow = ({ icon, label, value, field }: { icon: React.ReactNode; label: string; value: string | null; field: string }) => {
     if (!value || !canSee(u, field)) return null
-    return <div className="flex items-center gap-3 text-sm">{icon}<span className="text-zinc-300">{label ? `${label}: ` : ''}{value}</span></div>
+    return <div className="flex items-center gap-3 text-sm">{icon}<span className="text-zinc-700 dark:text-zinc-300">{label ? `${label}: ` : ''}{value}</span></div>
   }
 
   return (
     <div className="fixed inset-0 z-70 flex justify-end">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-zinc-900 border-l border-white/5 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 sticky top-0 bg-zinc-900 z-10">
-          <h2 className="text-lg font-medium text-white">Member Profile</h2>
-          <button onClick={onClose} className="text-zinc-400 hover:text-white cursor-pointer"><X size={20} /></button>
+      <div className="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white border-l border-zinc-200 dark:bg-zinc-900 dark:border-white/5 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-300">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/5 sticky top-0 bg-white dark:bg-zinc-900 z-10">
+          <h2 className="text-lg font-medium text-zinc-900 dark:text-white">Member Profile</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"><X size={20} /></button>
         </div>
 
         <div className="p-6 space-y-5">
           {/* Avatar + Name */}
           <div className="text-center py-4">
-            <div className="w-20 h-20 rounded-full bg-linear-to-br from-red-500/20 to-red-600/10 border border-red-500/20 flex items-center justify-center text-red-400 font-bold text-2xl mx-auto mb-3 overflow-hidden">
+            <div className="w-20 h-20 rounded-full bg-linear-to-br from-red-100 to-red-50 border border-red-200 text-red-700 dark:from-red-500/20 dark:to-red-600/10 dark:border-red-500/20 dark:text-red-400 flex items-center justify-center font-bold text-2xl mx-auto mb-3 overflow-hidden">
               {u.avatarUrl ? <img src={u.avatarUrl} alt="" className="w-full h-full object-cover" /> : u.displayName.charAt(0).toUpperCase()}
             </div>
-            <h3 className="text-xl font-bold text-white">{u.displayName}</h3>
-            {u.username && <p className="text-sm text-zinc-400 mt-0.5">@{u.username}</p>}
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-white">{u.displayName}</h3>
+            {u.username && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">@{u.username}</p>}
             {location && <p className="text-xs text-zinc-500 mt-1 inline-flex items-center gap-1 justify-center"><MapPin size={12} /> {location}</p>}
           </div>
 
           {/* Role & Region */}
-          <div className="bg-zinc-800/50 border border-white/5 rounded-2xl p-4 space-y-3">
-            <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Region</span><span className="text-sm text-zinc-300">{member.region.name}</span></div>
+          <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4 space-y-3">
+            <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Region</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{member.region.name}</span></div>
             <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Role</span><span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${getRoleBadgeColor(member.role)}`}>{member.role === 'co_lead' ? 'Co-Lead' : member.role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</span></div>
-            {u.availability && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Availability</span><span className="text-xs text-emerald-400">{u.availability}</span></div>}
-            {canSee(u, 'studentStatus') && u.studentStatus && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Student</span><span className="text-sm text-zinc-300 capitalize">{u.studentStatus}</span></div>}
-            {canSee(u, 'university') && u.university && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">University</span><span className="text-sm text-zinc-300">{u.university}</span></div>}
+            {u.availability && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Availability</span><span className="text-xs text-emerald-700 dark:text-emerald-400">{u.availability}</span></div>}
+            {canSee(u, 'studentStatus') && u.studentStatus && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">Student</span><span className="text-sm text-zinc-700 dark:text-zinc-300 capitalize">{u.studentStatus}</span></div>}
+            {canSee(u, 'university') && u.university && <div className="flex justify-between items-center"><span className="text-xs text-zinc-500">University</span><span className="text-sm text-zinc-700 dark:text-zinc-300">{u.university}</span></div>}
           </div>
 
           {/* Bio */}
           {canSee(u, 'bio') && u.bio && (
-            <div className="bg-zinc-800/50 border border-white/5 rounded-2xl p-4">
+            <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4">
               <p className="text-xs text-zinc-500 mb-2">About</p>
-              <p className="text-sm text-zinc-300 leading-relaxed">{u.bio}</p>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{u.bio}</p>
             </div>
           )}
 
@@ -212,12 +212,12 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
           {languages.length > 0 && canSee(u, 'languages') && <TagBlock title="Languages" items={languages} />}
 
           {/* Contact */}
-          <div className="bg-zinc-800/50 border border-white/5 rounded-2xl p-4">
+          <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4">
             <p className="text-xs text-zinc-500 mb-3">Contact & Social</p>
             <div className="space-y-2.5">
               {/* Always visible */}
-              {u.xHandle && <div className="flex items-center gap-3 text-sm"><Twitter size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-300">@{u.xHandle}</span></div>}
-              {u.discord && <div className="flex items-center gap-3 text-sm"><MessageCircle size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-300">{u.discord}</span></div>}
+              {u.xHandle && <div className="flex items-center gap-3 text-sm"><Twitter size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">@{u.xHandle}</span></div>}
+              {u.discord && <div className="flex items-center gap-3 text-sm"><MessageCircle size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">{u.discord}</span></div>}
               {/* Privacy-gated */}
               <SocialRow icon={<Send size={14} className="text-zinc-500 shrink-0" />} label="" value={u.telegram} field="telegram" />
               <SocialRow icon={<Github size={14} className="text-zinc-500 shrink-0" />} label="" value={u.github} field="github" />
@@ -226,28 +226,28 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
               <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Website" value={u.website} field="website" />
               <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="YouTube" value={u.youtube} field="youtube" />
               <SocialRow icon={<Globe size={14} className="text-zinc-500 shrink-0" />} label="Reddit" value={u.reddit} field="reddit" />
-              {canSee(u, 'email') && u.email && <div className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-300">{u.email}</span></div>}
+              {canSee(u, 'email') && u.email && <div className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><span className="text-zinc-700 dark:text-zinc-300">{u.email}</span></div>}
               {socialLinks.filter(l => l.name && l.url && /^https?:\/\//i.test(l.url)).map((link, i) => (
-                <div key={i} className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><a href={link.url} target="_blank" rel="noopener noreferrer" className="text-red-400 hover:text-red-300 truncate">{link.name}</a></div>
+                <div key={i} className="flex items-center gap-3 text-sm"><Globe size={14} className="text-zinc-500 shrink-0" /><a href={link.url} target="_blank" rel="noopener noreferrer" className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 truncate">{link.name}</a></div>
               ))}
             </div>
           </div>
 
           {/* Lead-only fields */}
           {isLead && (u.cChainAddress || u.developmentGoals || u.shippingAddress || u.merchSizes) && (
-            <div className="bg-amber-500/5 border border-amber-500/20 rounded-2xl p-4">
-              <p className="text-xs text-amber-400 font-semibold mb-3">Lead-Only Information</p>
+            <div className="bg-amber-50 border border-amber-200 dark:bg-amber-500/5 dark:border-amber-500/20 rounded-2xl p-4">
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mb-3">Lead-Only Information</p>
               <div className="space-y-2.5 text-sm">
-                {u.cChainAddress && <div><span className="text-xs text-zinc-500">C-Chain:</span> <span className="text-zinc-300 font-mono text-xs break-all">{u.cChainAddress}</span></div>}
-                {u.developmentGoals && <div><span className="text-xs text-zinc-500">Dev Goals:</span> <p className="text-zinc-300 mt-0.5">{u.developmentGoals}</p></div>}
-                {u.shippingAddress && <div><span className="text-xs text-zinc-500">Shipping:</span> <p className="text-zinc-300 mt-0.5">{u.shippingAddress}</p></div>}
-                {u.merchSizes && <div><span className="text-xs text-zinc-500">Merch Sizes:</span> <span className="text-zinc-300">{u.merchSizes}</span></div>}
+                {u.cChainAddress && <div><span className="text-xs text-zinc-500">C-Chain:</span> <span className="text-zinc-700 dark:text-zinc-300 font-mono text-xs break-all">{u.cChainAddress}</span></div>}
+                {u.developmentGoals && <div><span className="text-xs text-zinc-500">Dev Goals:</span> <p className="text-zinc-700 dark:text-zinc-300 mt-0.5">{u.developmentGoals}</p></div>}
+                {u.shippingAddress && <div><span className="text-xs text-zinc-500">Shipping:</span> <p className="text-zinc-700 dark:text-zinc-300 mt-0.5">{u.shippingAddress}</p></div>}
+                {u.merchSizes && <div><span className="text-xs text-zinc-500">Merch Sizes:</span> <span className="text-zinc-700 dark:text-zinc-300">{u.merchSizes}</span></div>}
               </div>
             </div>
           )}
 
           {isLead && (
-            <div className="bg-zinc-900/30 border border-zinc-800 rounded-xl p-3 flex items-center gap-2.5">
+            <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/30 dark:border-zinc-800 rounded-xl p-3 flex items-center gap-2.5">
               <p className="text-xs text-zinc-500">You are viewing the full profile as a lead. Some fields may be hidden from regular members.</p>
             </div>
           )}
@@ -259,11 +259,11 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
 
 function TagBlock({ title, items, highlight }: { title: string; items: string[]; highlight?: boolean }) {
   return (
-    <div className="bg-zinc-800/50 border border-white/5 rounded-2xl p-4">
+    <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4">
       <p className="text-xs text-zinc-500 mb-3">{title}</p>
       <div className="flex flex-wrap gap-2">
         {items.map((item) => (
-          <span key={item} className={`px-3 py-1.5 text-sm rounded-lg ${highlight ? 'bg-white/10 border border-white/20 text-white' : 'bg-zinc-900 border border-zinc-800 text-zinc-300'}`}>{item}</span>
+          <span key={item} className={`px-3 py-1.5 text-sm rounded-lg ${highlight ? 'bg-zinc-200 border border-zinc-300 text-zinc-900 dark:bg-white/10 dark:border-white/20 dark:text-white' : 'bg-white border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300'}`}>{item}</span>
         ))}
       </div>
     </div>

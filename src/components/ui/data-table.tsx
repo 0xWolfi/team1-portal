@@ -40,13 +40,13 @@ export function DataTable<T extends Record<string, unknown>>({ columns, data, on
     <div className={cn('overflow-x-auto', className)}>
       <table className="w-full">
         <thead>
-          <tr className="border-b border-zinc-800">
+          <tr className="border-b border-zinc-200 dark:border-zinc-800">
             {columns.map((col) => (
               <th
                 key={col.key}
                 className={cn(
                   'px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider',
-                  col.sortable && 'cursor-pointer hover:text-white select-none',
+                  col.sortable && 'cursor-pointer hover:text-zinc-900 dark:hover:text-white select-none',
                   col.className
                 )}
                 onClick={() => col.sortable && toggleSort(col.key)}
@@ -66,13 +66,13 @@ export function DataTable<T extends Record<string, unknown>>({ columns, data, on
             <tr
               key={i}
               className={cn(
-                'border-b border-zinc-800 transition-colors',
-                onRowClick && 'cursor-pointer hover:bg-zinc-800/50'
+                'border-b border-zinc-200 dark:border-zinc-800 transition-colors',
+                onRowClick && 'cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50'
               )}
               onClick={() => onRowClick?.(item)}
             >
               {columns.map((col) => (
-                <td key={col.key} className={cn('px-4 py-3 text-sm text-zinc-300', col.className)}>
+                <td key={col.key} className={cn('px-4 py-3 text-sm text-zinc-700 dark:text-zinc-300', col.className)}>
                   {col.render ? col.render(item) : (item[col.key] as React.ReactNode)}
                 </td>
               ))}

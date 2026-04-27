@@ -15,10 +15,10 @@ interface ToastContainerProps {
 }
 
 const icons = {
-  success: <CheckCircle size={18} className="text-emerald-400" />,
-  error: <XCircle size={18} className="text-red-400" />,
-  warning: <AlertTriangle size={18} className="text-amber-400" />,
-  info: <Info size={18} className="text-blue-400" />,
+  success: <CheckCircle size={18} className="text-emerald-600 dark:text-emerald-400" />,
+  error: <XCircle size={18} className="text-red-600 dark:text-red-400" />,
+  warning: <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400" />,
+  info: <Info size={18} className="text-blue-600 dark:text-blue-400" />,
 }
 
 const borderColors = {
@@ -40,13 +40,13 @@ export function ToastContainer({ toasts, onDismiss }: ToastContainerProps) {
             exit={{ opacity: 0, x: 100, scale: 0.95 }}
             className={cn(
               'flex items-center gap-3 px-4 py-3 rounded-lg shadow-xl min-w-[300px]',
-              'bg-zinc-900 border border-zinc-700 border-l-4',
+              'bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 border-l-4',
               borderColors[t.type]
             )}
           >
             {icons[t.type]}
-            <span className="text-sm text-zinc-300 flex-1">{t.message}</span>
-            <button onClick={() => onDismiss(t.id)} className="text-zinc-500 hover:text-white cursor-pointer">
+            <span className="text-sm text-zinc-700 dark:text-zinc-300 flex-1">{t.message}</span>
+            <button onClick={() => onDismiss(t.id)} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white cursor-pointer">
               <X size={14} />
             </button>
           </motion.div>

@@ -38,7 +38,7 @@ export default function AdminAnnouncementsPage() {
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-medium text-white flex items-center gap-2"><Megaphone size={24} className="text-red-500" /> Announcements</h1></div>
+        <div><h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><Megaphone size={24} className="text-red-500" /> Announcements</h1></div>
         <Button onClick={() => setModal(true)}><Plus size={16} /> New Announcement</Button>
       </motion.div>
 
@@ -48,14 +48,14 @@ export default function AdminAnnouncementsPage() {
             <Card key={a.id} className="flex items-start justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-medium text-white">{a.title}</h3>
+                  <h3 className="text-sm font-medium text-zinc-900 dark:text-white">{a.title}</h3>
                   {a.isGlobal ? <Badge>Global</Badge> : a.region && <Badge variant="info">{a.region.name}</Badge>}
                   {a.priority !== 'normal' && <Badge variant={a.priority === 'urgent' ? 'danger' : 'warning'}>{a.priority}</Badge>}
                 </div>
-                <p className="text-xs text-zinc-400 line-clamp-2">{a.content}</p>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400 line-clamp-2">{a.content}</p>
                 <p className="text-[10px] text-zinc-500 mt-1">{formatDate(a.createdAt)} &middot; {a.creator?.displayName}</p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}><Trash2 size={14} className="text-red-400" /></Button>
+              <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}><Trash2 size={14} className="text-red-600 dark:text-red-400" /></Button>
             </Card>
           ))}
         </div>
@@ -67,14 +67,14 @@ export default function AdminAnnouncementsPage() {
           <Textarea label="Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} />
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-sm text-zinc-300 font-medium">Priority</label>
-              <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
+              <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Priority</label>
+              <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
                 <option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option>
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-sm text-zinc-300 font-medium">Region (or Global)</label>
-              <select className="w-full h-11 px-4 bg-zinc-900 border border-zinc-700/50 rounded-lg text-sm text-zinc-300 focus:outline-none focus:border-red-500" value={form.regionId} onChange={(e) => setForm({ ...form, regionId: e.target.value })}>
+              <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Region (or Global)</label>
+              <select className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700/50 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500" value={form.regionId} onChange={(e) => setForm({ ...form, regionId: e.target.value })}>
                 <option value="">Global</option>
                 {regions?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>

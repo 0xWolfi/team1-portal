@@ -132,15 +132,6 @@ export interface MemberActivity {
   createdAt: string
 }
 
-export interface MemberRosterEntry {
-  id: string
-  email: string | null
-  xHandle: string | null
-  name: string | null
-  isUsed: boolean
-  createdAt: string
-}
-
 export interface Playbook {
   id: string
   regionId: string

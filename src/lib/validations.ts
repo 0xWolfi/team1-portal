@@ -103,8 +103,11 @@ export const leadAssignmentSchema = z.object({
 export const memberAssignmentSchema = z.object({
   email: z.string().email().optional(),
   userId: z.string().optional(),
-  regionId: z.string().min(1, 'Region is required'),
-  role: z.enum(['member', 'lead', 'co_lead']).default('member'),
+  regionId: z.string().optional(),
+  role: z.enum(['member', 'lead', 'co_lead', 'super_admin']).default('member'),
+}).refine((data) => data.role === 'super_admin' || (data.regionId && data.regionId.length > 0), {
+  message: 'Region is required',
+  path: ['regionId'],
 })
 
 // Notification update

@@ -19,8 +19,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'disabled:opacity-50 disabled:pointer-events-none',
           // Variants
           variant === 'primary' && 'bg-red-500 text-white hover:bg-red-600 active:scale-[0.98]',
-          variant === 'secondary' && 'border border-red-500 text-red-500 hover:bg-red-500/10 active:scale-[0.98]',
-          variant === 'ghost' && 'text-zinc-400 hover:text-white hover:bg-zinc-800 active:scale-[0.98]',
+          variant === 'secondary' && 'border border-red-500 text-red-600 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 active:scale-[0.98]',
+          variant === 'ghost' && 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-zinc-800 active:scale-[0.98]',
           variant === 'danger' && 'bg-red-700 text-white hover:bg-red-800 active:scale-[0.98]',
           // Sizes
           size === 'sm' && 'h-8 px-3 text-xs rounded-lg',

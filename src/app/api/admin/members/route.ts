@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { sendMemberAddedMail } from '@/lib/mailer'
 import { memberAssignmentSchema } from '@/lib/validations'
+import { recordAudit, getRequestIp } from '@/lib/audit'
 
 export async function GET(request: Request) {
   try {
@@ -102,16 +103,15 @@ export async function POST(request: Request) {
 
     if (!email && !userId) return apiError('email or userId is required', 422)
 
-    // Cross-region check: leads can only add members to their own regions
-    if (!admin) {
-      const leadRegion = await prisma.userRegionMembership.findFirst({
-        where: { userId: user.id, regionId, role: { in: ['lead', 'co_lead'] } },
-      })
-      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
+    // Only super admins can grant super_admin
+    if (role === 'super_admin' && !admin) {
+      return apiError('Forbidden: only super admins can grant super_admin', 403)
     }
 
     // Look up user by email if userId not provided; auto-create if they don't exist yet
     let targetUserId: string = userId || ''
+    let targetEmail = email?.toLowerCase().trim() || ''
+    let targetDisplayName = ''
     if (email && !userId) {
       const normalizedEmail = email.toLowerCase().trim()
       let targetUser = await prisma.user.findUnique({ where: { email: normalizedEmail } })
@@ -126,15 +126,56 @@ export async function POST(request: Request) {
         })
       }
       targetUserId = targetUser.id
+      targetEmail = targetUser.email
+      targetDisplayName = targetUser.displayName
+    } else if (userId) {
+      const targetUser = await prisma.user.findUnique({ where: { id: userId } })
+      if (!targetUser) return apiError('User not found', 404)
+      targetEmail = targetUser.email
+      targetDisplayName = targetUser.displayName
+    }
+
+    // Super admin grant: create/upsert PlatformAdmin row, no region membership
+    if (role === 'super_admin') {
+      const adminRow = await prisma.platformAdmin.upsert({
+        where: { userId: targetUserId },
+        create: { userId: targetUserId, role: 'super_admin' },
+        update: { role: 'super_admin' },
+      })
+
+      await recordAudit({
+        userId: user.id,
+        action: 'grant_super_admin',
+        module: 'members',
+        entityType: 'PlatformAdmin',
+        entityId: adminRow.id,
+        details: `Granted super_admin to ${targetDisplayName} (${targetEmail})`,
+        after: { role: 'super_admin', userId: targetUserId },
+        ipAddress: getRequestIp(request),
+      })
+
+      return apiSuccess(adminRow, 201)
+    }
+
+    // Region-scoped role: existing flow
+    if (!regionId) return apiError('Region is required', 422)
+    const targetRegionId: string = regionId
+
+    // Cross-region check: leads can only add members to their own regions
+    if (!admin) {
+      const leadRegion = await prisma.userRegionMembership.findFirst({
+        where: { userId: user.id, regionId: targetRegionId, role: { in: ['lead', 'co_lead'] } },
+      })
+      if (!leadRegion) return apiError('Forbidden: you are not a lead for this region', 403)
     }
 
     const existing = await prisma.userRegionMembership.findUnique({
-      where: { userId_regionId: { userId: targetUserId, regionId } },
+      where: { userId_regionId: { userId: targetUserId, regionId: targetRegionId } },
     })
     if (existing) return apiError('User already has membership in this region', 409)
 
     const membership = await prisma.userRegionMembership.create({
-      data: { userId: targetUserId, regionId, role, status: 'accepted', isPrimary: false },
+      data: { userId: targetUserId, regionId: targetRegionId, role, status: 'accepted', isPrimary: false },
       include: { user: { select: { displayName: true, email: true } }, region: { select: { name: true } } },
     })
 

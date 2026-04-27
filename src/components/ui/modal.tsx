@@ -30,7 +30,7 @@ export function Modal({ open, onClose, title, children, size = 'md', className }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-sm"
             onClick={onClose}
           />
           <motion.div
@@ -40,15 +40,15 @@ export function Modal({ open, onClose, title, children, size = 'md', className }
             transition={{ type: 'spring', bounce: 0, duration: 0.3 }}
             className={cn(
               'relative w-full rounded-xl shadow-2xl max-h-[85vh] overflow-y-auto',
-              'bg-zinc-900 border border-zinc-700',
+              'bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700',
               sizes[size],
               className
             )}
           >
             {title && (
-              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 sticky top-0 bg-zinc-900 z-10">
-                <h2 className="text-lg font-medium text-white">{title}</h2>
-                <button onClick={onClose} className="text-zinc-400 hover:text-white transition-colors cursor-pointer">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700 sticky top-0 bg-white dark:bg-zinc-900 z-10">
+                <h2 className="text-lg font-medium text-zinc-900 dark:text-white">{title}</h2>
+                <button onClick={onClose} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white transition-colors cursor-pointer">
                   <X size={20} />
                 </button>
               </div>

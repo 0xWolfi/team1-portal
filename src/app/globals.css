@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-kanit);
   --color-brand-50: #fff0f1;
@@ -16,8 +18,15 @@
 }
 
 :root {
+  --background: #ffffff;
+  --foreground: #18181b;
+  color-scheme: light;
+}
+
+.dark {
   --background: #000000;
   --foreground: #ededed;
+  color-scheme: dark;
 }
 
 body {
@@ -25,13 +34,20 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
 
 .hero-gradient {
+  background: radial-gradient(ellipse at top right, rgba(255, 57, 74, 0.08), transparent 50%),
+              radial-gradient(ellipse at bottom left, rgba(48, 85, 179, 0.05), transparent 50%);
+}
+
+.dark .hero-gradient {
   background: radial-gradient(ellipse at top right, rgba(255, 57, 74, 0.12), transparent 50%),
               radial-gradient(ellipse at bottom left, rgba(48, 85, 179, 0.08), transparent 50%);
 }

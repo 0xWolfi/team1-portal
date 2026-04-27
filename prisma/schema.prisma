@@ -119,21 +119,6 @@ model AuthSession {
   @@map("portal_auth_sessions")
 }
 
-// ─── Member Roster (import whitelist) ───────────────────
-
-model MemberRoster {
-  id        String   @id @default(cuid())
-  email     String?
-  xHandle   String?
-  name      String?
-  addedById String?
-  isUsed    Boolean  @default(false) // marked true once user signs up
-  createdAt DateTime @default(now())
-
-  @@unique([email])
-  @@map("portal_member_roster")
-}
-
 // ─── Member Activities ──────────────────────────────────
 
 model MemberActivity {

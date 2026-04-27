@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import { useAuth } from '@/context/auth-context'
 import { SupportWidget } from '@/components/layout/support-widget'
+import { ThemeToggle } from '@/components/layout/theme-toggle'
 
 export default function LoginPage() {
   return <Suspense><LoginContent /></Suspense>
@@ -48,22 +49,26 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 hero-gradient">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img src="/logos/Team1_Symbol_Main.svg" alt="team1" className="h-12 w-12 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white">Sign in to <span className="text-brand-500">team1</span></h1>
+          <img src="/logos/Team1_Symbol_Black.svg" alt="team1" className="h-12 w-12 mx-auto mb-4 block dark:hidden" />
+          <img src="/logos/Team1_Symbol_Main.svg" alt="team1" className="h-12 w-12 mx-auto mb-4 hidden dark:block" />
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">Sign in to <span className="text-brand-500">team1</span></h1>
           <p className="text-sm text-zinc-500 mt-1">Welcome back to the community portal</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">{error}</div>
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 dark:bg-red-500/10 dark:border-red-500/20 rounded-xl text-sm text-red-700 dark:text-red-400">{error}</div>
         )}
 
         {/* Google Sign In */}
         <button
           onClick={handleGoogleSignIn}
           disabled={googleLoading}
-          className="w-full bg-white hover:bg-zinc-100 text-zinc-900 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-3"
+          className="w-full bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-900 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer flex items-center justify-center gap-3"
         >
           {googleLoading ? (
             <>
@@ -83,23 +88,23 @@ function LoginContent() {
           )}
         </button>
 
-        <div className="mt-8 pt-6 border-t border-white/[0.06] text-center">
+        <div className="mt-8 pt-6 border-t border-zinc-200 dark:border-white/[0.06] text-center">
           <p className="text-sm text-zinc-500 mb-3">Not a member yet?</p>
           <button
             type="button"
             onClick={() => setShowApplyNotice(true)}
-            className="w-full border border-white/10 text-zinc-400 hover:text-white hover:bg-white/5 py-2.5 rounded-xl text-sm font-medium transition-all text-center cursor-pointer"
+            className="w-full border border-zinc-300 text-zinc-700 hover:text-zinc-900 hover:bg-zinc-100 dark:border-white/10 dark:text-zinc-400 dark:hover:text-white dark:hover:bg-white/5 py-2.5 rounded-xl text-sm font-medium transition-all text-center cursor-pointer"
           >
             Apply for Membership
           </button>
           {showApplyNotice && (
-            <p className="mt-3 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2">
+            <p className="mt-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 dark:text-amber-300/90 dark:bg-amber-500/10 dark:border-amber-500/20 rounded-lg px-3 py-2">
               Membership applications are coming soon. Please check back later.
             </p>
           )}
         </div>
 
-        <p className="text-center text-[10px] text-zinc-700 mt-8">&copy; {new Date().getFullYear()} team1. All rights reserved.</p>
+        <p className="text-center text-[10px] text-zinc-500 dark:text-zinc-700 mt-8">&copy; {new Date().getFullYear()} team1. All rights reserved.</p>
       </div>
       <SupportWidget />
     </div>

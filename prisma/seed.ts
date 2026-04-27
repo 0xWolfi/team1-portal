@@ -18,7 +18,6 @@ async function main() {
   await prisma.authSession.deleteMany()
   await prisma.user.deleteMany()
   await prisma.region.deleteMany()
-  await prisma.memberRoster.deleteMany()
 
   // Create regions (Global first, then country regions)
   const regions = await Promise.all([
@@ -55,11 +54,6 @@ async function main() {
       })),
     })
   }
-
-  // Roster (also only the two superadmins — used for non-team1.network whitelisting)
-  await prisma.memberRoster.createMany({
-    data: adminEmails.map((a) => ({ email: a.email, name: a.name, isUsed: true })),
-  })
 
   console.log('Seed complete!')
   console.log('')

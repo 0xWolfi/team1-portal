@@ -34,8 +34,8 @@ export default function AdminRegionsPage() {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-medium text-white flex items-center gap-2"><Globe size={24} className="text-red-500" /> Regions</h1>
-          <p className="text-sm text-zinc-400 mt-1">{regions?.length || 0} regions</p>
+          <h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><Globe size={24} className="text-red-500" /> Regions</h1>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{regions?.length || 0} regions</p>
         </div>
         <Button onClick={() => setModal(true)}><Plus size={16} /> Add Region</Button>
       </motion.div>
@@ -45,13 +45,13 @@ export default function AdminRegionsPage() {
           {regions?.map((r: any) => (
             <Card key={r.id} hover>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium text-white">{r.name}</h3>
+                <h3 className="text-sm font-medium text-zinc-900 dark:text-white">{r.name}</h3>
                 <Badge variant={r.isActive ? 'success' : 'default'}>{r.isActive ? 'Active' : 'Inactive'}</Badge>
               </div>
-              <p className="text-xs text-zinc-400">{r.country} &middot; {r._count?.memberships || 0} members</p>
+              <p className="text-xs text-zinc-600 dark:text-zinc-400">{r.country} &middot; {r._count?.memberships || 0} members</p>
               <p className="text-xs text-zinc-500 mt-1">/{r.slug}</p>
               {r.memberships?.filter((m: any) => m.role === 'lead').map((m: any) => (
-                <p key={m.user.id} className="text-xs text-red-500 mt-2">Lead: {m.user.displayName}</p>
+                <p key={m.user.id} className="text-xs text-red-600 dark:text-red-500 mt-2">Lead: {m.user.displayName}</p>
               ))}
             </Card>
           ))}

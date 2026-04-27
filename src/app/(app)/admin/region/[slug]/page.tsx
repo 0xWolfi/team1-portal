@@ -11,8 +11,8 @@ function StatCard({ icon, label, value, href, delay }: { icon: React.ReactNode; 
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}>
       <Link href={href}><Card hover className="flex items-center gap-4 p-4">
-        <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">{icon}</div>
-        <div><p className="text-2xl font-medium text-white">{value}</p><p className="text-xs text-zinc-400">{label}</p></div>
+        <div className="w-10 h-10 rounded-lg bg-red-50 border border-red-200 dark:bg-red-500/10 dark:border-transparent flex items-center justify-center text-red-600 dark:text-red-500">{icon}</div>
+        <div><p className="text-2xl font-medium text-zinc-900 dark:text-white">{value}</p><p className="text-xs text-zinc-600 dark:text-zinc-400">{label}</p></div>
       </Card></Link>
     </motion.div>
   )
@@ -28,8 +28,8 @@ export default function RegionAdminPage({ params }: { params: Promise<{ slug: st
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-2xl font-medium text-white">{region?.name || slug} <span className="text-red-500">Admin</span></h1>
-        <p className="text-sm text-zinc-400 mt-1">Manage content for {region?.name}</p>
+        <h1 className="text-2xl font-medium text-zinc-900 dark:text-white">{region?.name || slug} <span className="text-red-500">Admin</span></h1>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Manage content for {region?.name}</p>
       </motion.div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
