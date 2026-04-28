@@ -12,7 +12,7 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children, requireAdmin, requireMember, allowRegionLead }: AuthGuardProps) {
-  const { user, loading, isSuperAdmin, isRegionLead, isMember } = useAuth()
+  const { user, loading, isSuperAdmin, isPlatformAdmin, isRegionLead, isMember } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
 
@@ -24,7 +24,7 @@ export function AuthGuard({ children, requireAdmin, requireMember, allowRegionLe
       return
     }
 
-    if (requireAdmin && !isSuperAdmin && !(allowRegionLead && isRegionLead())) {
+    if (requireAdmin && !isPlatformAdmin && !(allowRegionLead && isRegionLead())) {
       router.push('/dashboard')
       return
     }
@@ -33,11 +33,11 @@ export function AuthGuard({ children, requireAdmin, requireMember, allowRegionLe
       router.push('/apply')
       return
     }
-  }, [user, loading, pathname, requireAdmin, requireMember, allowRegionLead, isSuperAdmin, isRegionLead, isMember, router])
+  }, [user, loading, pathname, requireAdmin, requireMember, allowRegionLead, isSuperAdmin, isPlatformAdmin, isRegionLead, isMember, router])
 
   if (loading) return <PageLoader />
   if (!user) return <PageLoader />
-  if (requireAdmin && !isSuperAdmin && !(allowRegionLead && isRegionLead())) return <PageLoader />
+  if (requireAdmin && !isPlatformAdmin && !(allowRegionLead && isRegionLead())) return <PageLoader />
 
   return <>{children}</>
 }

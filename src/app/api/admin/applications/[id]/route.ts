@@ -7,10 +7,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
+    const isPlatformAdmin = !!admin && (admin.role === 'super_admin' || admin.role === 'community_ops')
     const isLead = await prisma.userRegionMembership.findFirst({
       where: { userId: user.id, role: { in: ['lead', 'co_lead'] } },
     })
-    if (!admin && !isLead) return apiError('Forbidden', 403)
+    if (!isPlatformAdmin && !isLead) return apiError('Forbidden', 403)
 
     const { id } = await params
     const body = await request.json()
@@ -19,7 +20,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     if (!['approved', 'rejected'].includes(status)) return apiError('Invalid status', 422)
 
     // Cross-region check: leads can only approve for their own regions
-    if (!admin && regionId) {
+    if (!isPlatformAdmin && regionId) {
       const leadRegion = await prisma.userRegionMembership.findFirst({
         where: { userId: user.id, regionId, role: { in: ['lead', 'co_lead'] } },
       })

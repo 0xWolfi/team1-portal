@@ -80,6 +80,7 @@ export const regionSchema = z.object({
   name: z.string().min(1, 'Required').max(100),
   slug: z.string().optional(),
   country: z.string().optional(),
+  countries: z.string().nullable().optional(),
   description: z.string().max(500).optional(),
   logoUrl: z.string().optional(),
   coverImageUrl: z.string().optional(),
@@ -104,11 +105,11 @@ export const memberAssignmentSchema = z.object({
   email: z.string().email().optional(),
   userId: z.string().optional(),
   regionId: z.string().optional(),
-  role: z.enum(['member', 'lead', 'co_lead', 'super_admin']).default('member'),
-}).refine((data) => data.role === 'super_admin' || (data.regionId && data.regionId.length > 0), {
-  message: 'Region is required',
-  path: ['regionId'],
-})
+  role: z.enum(['member', 'lead', 'co_lead', 'super_admin', 'community_ops']).default('member'),
+}).refine(
+  (data) => data.role === 'super_admin' || data.role === 'community_ops' || (data.regionId && data.regionId.length > 0),
+  { message: 'Region is required', path: ['regionId'] },
+)
 
 // Notification update
 export const notificationUpdateSchema = z.object({
@@ -126,9 +127,14 @@ export const adminUserUpdateSchema = z.object({
 })
 
 // Self-editable profile fields
+// NOTE: most fields are `.optional().nullable()` so that empty strings sent from
+// the form (e.g. an unset username) don't fail validation and silently kill the
+// entire save. `displayName`/`username` accept empty string too — the page
+// enforces non-empty `displayName` client-side, and DB-level uniqueness handles
+// username conflicts.
 export const selfEditableProfileSchema = z.object({
-  displayName: z.string().min(1).max(100).optional(),
-  username: z.string().min(1).max(50).optional(),
+  displayName: z.string().max(100).optional().nullable(),
+  username: z.string().max(50).optional().nullable(),
   avatarUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
   bio: z.string().max(500).optional().nullable(),
   title: z.string().max(100).optional().nullable(),

@@ -18,6 +18,14 @@ const superAdminNav = [
   { label: 'Audit Log', href: '/admin/audit', icon: ScrollText },
 ]
 
+const communityOpsNav = [
+  { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'All Members', href: '/admin/members', icon: Users },
+  { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
+  { label: 'Announcements', href: '/admin/announcements', icon: Megaphone },
+  { label: 'Audit Log', href: '/admin/audit', icon: ScrollText },
+]
+
 const regionNav = [
   { label: 'Overview', href: '', icon: LayoutDashboard },
   { label: 'Members', href: '/members', icon: Users },
@@ -28,14 +36,14 @@ const regionNav = [
 ]
 
 export function AdminSidebar() {
-  const { isSuperAdmin, getUserRegions } = useAuth()
+  const { isSuperAdmin, isCommunityOps, isPlatformAdmin, getUserRegions } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [expandedRegion, setExpandedRegion] = useState<string | null>(null)
 
   const userRegions = getUserRegions().filter((r) => r.role === 'lead' || r.role === 'co_lead')
-  const { data: allRegions } = useApi<Region[]>(isSuperAdmin ? '/api/regions' : null)
-  const regions = isSuperAdmin ? (allRegions || []) : userRegions.map((r) => ({ id: r.id, name: r.name, slug: r.slug }))
+  const { data: allRegions } = useApi<Region[]>(isPlatformAdmin ? '/api/regions' : null)
+  const regions = isPlatformAdmin ? (allRegions || []) : userRegions.map((r) => ({ id: r.id, name: r.name, slug: r.slug }))
 
   return (
     <aside className="w-[260px] shrink-0 h-[calc(100vh-64px)] sticky top-16 overflow-y-auto bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
@@ -51,12 +59,12 @@ export function AdminSidebar() {
           </button>
         </div>
 
-        {/* Super Admin nav */}
-        {isSuperAdmin && (
+        {/* Super Admin / Community Ops nav */}
+        {(isSuperAdmin || isCommunityOps) && (
           <div>
-            <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-3 px-3">Super Admin</p>
+            <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wider mb-3 px-3">{isSuperAdmin ? 'Super Admin' : 'Community Ops'}</p>
             <nav className="space-y-1">
-              {superAdminNav.map((item) => {
+              {(isSuperAdmin ? superAdminNav : communityOpsNav).map((item) => {
                 const Icon = item.icon
                 const isActive = item.href === '/admin' ? pathname === '/admin' : pathname.startsWith(item.href)
                 return (

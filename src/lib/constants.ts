@@ -44,6 +44,9 @@ export const ADMIN_NAV = {
   ],
 } as const
 
+export const MERCH_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'] as const
+export type MerchSize = typeof MERCH_SIZES[number]
+
 export const AVAILABILITY_OPTIONS = [
   'Open to Hack',
   'Just Exploring',

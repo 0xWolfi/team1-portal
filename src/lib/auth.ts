@@ -111,3 +111,31 @@ export function apiSuccess(data: unknown, status = 200) {
 export function apiError(error: string, status = 400) {
   return Response.json({ success: false, error }, { status })
 }
+
+type AdminLike = { adminRole?: { role: string } | null } | null | undefined
+
+export function isSuperAdmin(user: AdminLike): boolean {
+  return !!user?.adminRole && user.adminRole.role === 'super_admin'
+}
+
+export function isCommunityOps(user: AdminLike): boolean {
+  return !!user?.adminRole && user.adminRole.role === 'community_ops'
+}
+
+export function isPlatformAdmin(user: AdminLike): boolean {
+  return isSuperAdmin(user) || isCommunityOps(user)
+}
+
+export function parseRegionCountries(json: string | null | undefined): string[] {
+  if (!json) return []
+  try {
+    const v = JSON.parse(json)
+    if (!Array.isArray(v)) return []
+    return v
+      .filter((x): x is string => typeof x === 'string')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+  } catch {
+    return []
+  }
+}

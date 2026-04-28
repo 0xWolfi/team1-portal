@@ -1,17 +1,19 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   Users, Search, ArrowLeft, X, MapPin, Twitter, MessageCircle,
-  Send, Github, Globe,
+  Send, Github, Globe, Activity, Calendar, Link as LinkIcon,
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useAuth } from '@/context/auth-context'
-import { getRoleBadgeColor } from '@/lib/helpers'
+import { api } from '@/lib/api-client'
+import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
 import { SocialLink } from '@/components/profile/social-link'
+import { ACTIVITY_TYPES, visibilityLabel } from '@/components/activities/activity-dialog'
 import type { SocialPlatform } from '@/lib/socials'
 import Link from 'next/link'
-import type { PrivacyLevel } from '@/types'
+import type { PrivacyLevel, MemberActivity } from '@/types'
 
 interface MemberUser {
   id: string; displayName: string; username: string | null; avatarUrl: string | null
@@ -57,14 +59,14 @@ function DirectoryContent() {
   const region = searchParams.get('region')
   const [search, setSearch] = useState('')
   const [selectedMember, setSelectedMember] = useState<MemberEntry | null>(null)
-  const { isSuperAdmin, isRegionLead } = useAuth()
+  const { isPlatformAdmin, isRegionLead } = useAuth()
 
   const url = `/api/directory${region ? `?region=${region}` : ''}${search ? `${region ? '&' : '?'}search=${search}` : ''}`
   const { data: members, loading } = useApi<MemberEntry[]>(url, [search, region])
   const filtered = members || []
 
   // Viewer's access level
-  const isLead = isSuperAdmin || isRegionLead()
+  const isLead = isPlatformAdmin || isRegionLead()
 
   // 3-tier privacy check
   const canSee = (member: MemberUser, field: string): boolean => {
@@ -184,6 +186,22 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
   const socialLinks = parseJson<{ name: string; url: string }[]>(u.socialLinks, [])
   const location = [canSee(u, 'city') ? u.city : null, canSee(u, 'state') ? u.state : null, u.country].filter(Boolean).join(', ')
 
+  const [tab, setTab] = useState<'overview' | 'activities'>('overview')
+  const [activities, setActivities] = useState<MemberActivity[] | null>(null)
+  const [actLoading, setActLoading] = useState(false)
+
+  useEffect(() => {
+    if (tab !== 'activities' || activities !== null) return
+    let cancelled = false
+    setActLoading(true)
+    api.get<MemberActivity[]>(`/api/users/${u.id}/activities`).then((res) => {
+      if (cancelled) return
+      setActivities(res.success && res.data ? res.data : [])
+      setActLoading(false)
+    })
+    return () => { cancelled = true }
+  }, [tab, activities, u.id])
+
   const SocialRow = ({ icon, platform, value, field }: { icon: React.ReactNode; platform: SocialPlatform; value: string | null; field: string }) => {
     if (!value || !canSee(u, field)) return null
     return (
@@ -213,6 +231,49 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
             {u.username && <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-0.5">@{u.username}</p>}
             {location && <p className="text-xs text-zinc-500 mt-1 inline-flex items-center gap-1 justify-center"><MapPin size={12} /> {location}</p>}
           </div>
+
+          {/* Tabs */}
+          <div className="border-b border-zinc-200 dark:border-white/5">
+            <div className="flex gap-6">
+              <button onClick={() => setTab('overview')} className={`pb-3 text-xs font-bold uppercase tracking-wider cursor-pointer ${tab === 'overview' ? 'text-zinc-900 dark:text-white border-b-2 border-red-500' : 'text-zinc-500'}`}>Overview</button>
+              <button onClick={() => setTab('activities')} className={`pb-3 text-xs font-bold uppercase tracking-wider cursor-pointer ${tab === 'activities' ? 'text-zinc-900 dark:text-white border-b-2 border-red-500' : 'text-zinc-500'}`}>Activities</button>
+            </div>
+          </div>
+
+          {tab === 'activities' && (
+            <div className="space-y-3">
+              {actLoading && (
+                <div className="py-10 text-center text-sm text-zinc-500">Loading activities...</div>
+              )}
+              {!actLoading && activities && activities.length === 0 && (
+                <div className="py-10 text-center text-sm text-zinc-500 border border-dashed border-zinc-200 dark:border-white/5 rounded-2xl">
+                  No activities visible to you.
+                </div>
+              )}
+              {!actLoading && activities && activities.length > 0 && activities.map((a) => (
+                <div key={a.id} className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-red-50 border border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400 flex items-center justify-center shrink-0">
+                    <Activity size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <span className="text-sm font-medium text-zinc-900 dark:text-white">{a.title}</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-white border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-400 rounded-full">{ACTIVITY_TYPES.find((t) => t.value === a.type)?.label || a.typeOther || a.type}</span>
+                      <span className="text-[10px] px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-600 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-500 rounded-full">{visibilityLabel(a.visibility)}</span>
+                      {a.source && a.source !== 'manual' && <span className="text-[10px] px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 rounded-full">{a.source}</span>}
+                    </div>
+                    {a.description && <p className="text-xs text-zinc-600 dark:text-zinc-500">{a.description}</p>}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 dark:text-zinc-600">
+                      <span className="flex items-center gap-1"><Calendar size={10} />{formatDate(a.date)}</span>
+                      {a.link && <a href={a.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><LinkIcon size={10} />Link</a>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === 'overview' && <>
 
           {/* Role & Region */}
           <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-800/50 dark:border-white/5 rounded-2xl p-4 space-y-3">
@@ -306,6 +367,7 @@ function MemberProfilePanel({ member, isLead, canSee, onClose }: {
               <p className="text-xs text-zinc-500">You are viewing the full profile as a lead. Some fields may be hidden from regular members.</p>
             </div>
           )}
+          </>}
         </div>
       </div>
     </div>

@@ -10,10 +10,11 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { useToast } from '@/context/toast-context'
 import { api } from '@/lib/api-client'
-import { AVAILABILITY_OPTIONS } from '@/lib/constants'
+import { AVAILABILITY_OPTIONS, MERCH_SIZES } from '@/lib/constants'
 import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
 import { AvatarUpload } from '@/components/profile/avatar-upload'
 import { SocialLink } from '@/components/profile/social-link'
+import { ActivityDialog, ACTIVITY_TYPES, visibilityLabel } from '@/components/activities/activity-dialog'
 import Link from 'next/link'
 import type { PrivacyLevel, MemberActivity } from '@/types'
 
@@ -64,14 +65,6 @@ const STUDENT_OPTIONS = [
   { value: 'undergrad', label: 'Undergraduate' },
   { value: 'graduate', label: 'Graduate / PhD' },
   { value: 'bootcamp', label: 'Bootcamp / Self-taught' },
-]
-
-const ACTIVITY_TYPES = [
-  { value: 'organized_event', label: 'Organized Event' },
-  { value: 'attended_event', label: 'Attended Event' },
-  { value: 'submitted_pr', label: 'Submitted PR' },
-  { value: 'created_content', label: 'Created Content' },
-  { value: 'other', label: 'Other' },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -157,6 +150,24 @@ function TagInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (
 
 const inputClass = 'w-full bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-xl px-4 py-2.5 text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-300 dark:focus:ring-white/10'
 
+function SizeSelect({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-xs text-zinc-600 dark:text-zinc-400 font-medium">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${inputClass} appearance-none cursor-pointer`}
+      >
+        <option value="">Not specified</option>
+        {MERCH_SIZES.map((s) => (
+          <option key={s} value={s}>{s}</option>
+        ))}
+      </select>
+    </div>
+  )
+}
+
 // ─── Profile form type ───────────────────────────────────────────────────────
 
 interface ProfileForm {
@@ -171,15 +182,16 @@ interface ProfileForm {
   availability: string[]; availabilityHours: string; socialLinks: { name: string; url: string }[]
   eventHostingPrefs: string[]
   cChainAddress: string; developmentGoals: string; shippingAddress: string; merchSizes: string
+  unisexTshirtSize: string; unisexHoodieSize: string; unisexPantsSize: string
+  womensTshirtSize: string; womensHoodieSize: string; womensPantsSize: string
   privacy: Record<string, PrivacyLevel>
 }
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function ProfileSettingsPage() {
-  const { user, refreshUser, isSuperAdmin, isRegionLead } = useAuth()
+  const { user, refreshUser } = useAuth()
   const { success, error: showError } = useToast()
-  const isLead = isSuperAdmin || isRegionLead()
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -188,8 +200,7 @@ export default function ProfileSettingsPage() {
 
   // Activity modal
   const [actModal, setActModal] = useState(false)
-  const [actForm, setActForm] = useState({ type: 'organized_event', title: '', description: '', date: '', link: '' })
-  const [actSaving, setActSaving] = useState(false)
+  const [actEditing, setActEditing] = useState<MemberActivity | null>(null)
   const [activities, setActivities] = useState<MemberActivity[]>([])
 
   const [form, setForm] = useState<ProfileForm>({
@@ -203,6 +214,8 @@ export default function ProfileSettingsPage() {
     walletAddress: '', skills: [], interests: [], roles: [],
     availability: [], availabilityHours: '', socialLinks: [], eventHostingPrefs: [],
     cChainAddress: '', developmentGoals: '', shippingAddress: '', merchSizes: '',
+    unisexTshirtSize: '', unisexHoodieSize: '', unisexPantsSize: '',
+    womensTshirtSize: '', womensHoodieSize: '', womensPantsSize: '',
     privacy: {},
   })
 
@@ -228,6 +241,12 @@ export default function ProfileSettingsPage() {
       eventHostingPrefs: parseJson<string[]>((user as any).eventHostingPrefs, []),
       cChainAddress: (user as any).cChainAddress || '', developmentGoals: (user as any).developmentGoals || '',
       shippingAddress: (user as any).shippingAddress || '', merchSizes: (user as any).merchSizes || '',
+      unisexTshirtSize: (user as any).unisexTshirtSize || '',
+      unisexHoodieSize: (user as any).unisexHoodieSize || '',
+      unisexPantsSize: (user as any).unisexPantsSize || '',
+      womensTshirtSize: (user as any).womensTshirtSize || '',
+      womensHoodieSize: (user as any).womensHoodieSize || '',
+      womensPantsSize: (user as any).womensPantsSize || '',
       privacy: parseJson<Record<string, PrivacyLevel>>((user as any).privacySettings, {}),
     })
     setActivities((user as any).activities || [])
@@ -259,11 +278,40 @@ export default function ProfileSettingsPage() {
     setSaving(true)
     const hoursTrimmed = form.availabilityHours.trim()
     const hoursNum = hoursTrimmed === '' ? null : Number(hoursTrimmed)
+    // Build payload explicitly. Don't spread `form` — it contains the in-memory
+    // `privacy` object which the server schema would otherwise need to know
+    // about, and any future form-only fields would also leak through.
     const payload = {
-      ...form,
-      skills: JSON.stringify(form.skills), interests: JSON.stringify(form.interests),
-      roles: JSON.stringify(form.roles), socialLinks: JSON.stringify(form.socialLinks),
-      languages: JSON.stringify(form.languages), eventHostingPrefs: JSON.stringify(form.eventHostingPrefs),
+      displayName: form.displayName.trim(),
+      username: form.username.trim() || null,
+      bio: form.bio,
+      country: form.country,
+      discord: form.discord.trim(),
+      xHandle: form.xHandle.trim(),
+      city: form.city, state: form.state,
+      studentStatus: form.studentStatus, university: form.university,
+      telegram: form.telegram, github: form.github,
+      linkedin: form.linkedin, instagram: form.instagram,
+      reddit: form.reddit, arena: form.arena,
+      youtube: form.youtube, tiktok: form.tiktok,
+      podcast: form.podcast, blog: form.blog, website: form.website,
+      walletAddress: form.walletAddress,
+      cChainAddress: form.cChainAddress,
+      developmentGoals: form.developmentGoals,
+      shippingAddress: form.shippingAddress,
+      merchSizes: form.merchSizes,
+      unisexTshirtSize: form.unisexTshirtSize || null,
+      unisexHoodieSize: form.unisexHoodieSize || null,
+      unisexPantsSize: form.unisexPantsSize || null,
+      womensTshirtSize: form.womensTshirtSize || null,
+      womensHoodieSize: form.womensHoodieSize || null,
+      womensPantsSize: form.womensPantsSize || null,
+      skills: JSON.stringify(form.skills),
+      interests: JSON.stringify(form.interests),
+      roles: JSON.stringify(form.roles),
+      socialLinks: JSON.stringify(form.socialLinks),
+      languages: JSON.stringify(form.languages),
+      eventHostingPrefs: JSON.stringify(form.eventHostingPrefs),
       availability: JSON.stringify(form.availability),
       availabilityHours: hoursNum != null && Number.isFinite(hoursNum) ? hoursNum : null,
       privacySettings: JSON.stringify(form.privacy),
@@ -274,17 +322,22 @@ export default function ProfileSettingsPage() {
     setSaving(false)
   }
 
-  const handleAddActivity = async () => {
-    if (!actForm.title || !actForm.date) { showError('Title and date are required'); return }
-    setActSaving(true)
-    const res = await api.post<MemberActivity>('/api/activities', actForm)
-    if (res.success && res.data) {
-      setActivities([res.data, ...activities])
-      setActModal(false)
-      setActForm({ type: 'organized_event', title: '', description: '', date: '', link: '' })
-      success('Activity added!')
-    } else showError(res.error || 'Failed')
-    setActSaving(false)
+  const handleActivitySaved = (saved: MemberActivity) => {
+    setActivities((prev) => {
+      const idx = prev.findIndex((a) => a.id === saved.id)
+      if (idx >= 0) {
+        const next = [...prev]
+        next[idx] = saved
+        return next
+      }
+      return [saved, ...prev]
+    })
+    setActEditing(null)
+  }
+
+  const handleEditActivity = (a: MemberActivity) => {
+    setActEditing(a)
+    setActModal(true)
   }
 
   const handleDeleteActivity = async (id: string) => {
@@ -416,9 +469,11 @@ export default function ProfileSettingsPage() {
                           <Activity size={18} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="text-sm font-medium text-zinc-900 dark:text-white">{a.title}</span>
-                            <span className="text-[10px] px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 rounded-full">{ACTIVITY_TYPES.find((t) => t.value === a.type)?.label || a.type}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:border-zinc-700 dark:text-zinc-400 rounded-full">{ACTIVITY_TYPES.find((t) => t.value === a.type)?.label || a.typeOther || a.type}</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-zinc-50 border border-zinc-200 text-zinc-600 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-500 rounded-full">{visibilityLabel(a.visibility)}</span>
+                            {a.source && a.source !== 'manual' && <span className="text-[10px] px-2 py-0.5 bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-500/10 dark:border-blue-500/20 dark:text-blue-400 rounded-full">{a.source}</span>}
                           </div>
                           {a.description && <p className="text-xs text-zinc-600 dark:text-zinc-500">{a.description}</p>}
                           <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 dark:text-zinc-600">
@@ -426,7 +481,10 @@ export default function ProfileSettingsPage() {
                             {a.link && <a href={a.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"><LinkIcon size={10} />Link</a>}
                           </div>
                         </div>
-                        <button onClick={() => handleDeleteActivity(a.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-zinc-400 hover:text-red-600 dark:text-zinc-600 dark:hover:text-red-400 cursor-pointer"><Trash2 size={14} /></button>
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleEditActivity(a)} className="p-1.5 rounded-lg hover:bg-zinc-100 dark:hover:bg-white/5 text-zinc-400 hover:text-zinc-700 dark:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer" aria-label="Edit activity"><Pencil size={14} /></button>
+                          <button onClick={() => handleDeleteActivity(a.id)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-zinc-400 hover:text-red-600 dark:text-zinc-600 dark:hover:text-red-400 cursor-pointer" aria-label="Delete activity"><Trash2 size={14} /></button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -629,7 +687,18 @@ export default function ProfileSettingsPage() {
               <FieldRow label="C-Chain Address"><input className={`${inputClass} font-mono text-xs`} value={form.cChainAddress} onChange={(e) => updateField('cChainAddress', e.target.value)} placeholder="0x..." /></FieldRow>
               <FieldRow label="Development Goals"><textarea className={`${inputClass} min-h-[80px] resize-y`} value={form.developmentGoals} onChange={(e) => updateField('developmentGoals', e.target.value)} placeholder="What are you working towards?" /></FieldRow>
               <FieldRow label="Shipping Address"><textarea className={`${inputClass} min-h-[60px] resize-y`} value={form.shippingAddress} onChange={(e) => updateField('shippingAddress', e.target.value)} placeholder="For merch shipments" /></FieldRow>
-              <FieldRow label="Merch Sizes"><input className={inputClass} value={form.merchSizes} onChange={(e) => updateField('merchSizes', e.target.value)} placeholder='e.g. T-Shirt: L, Hoodie: XL' /></FieldRow>
+              <div className="space-y-3">
+                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Merch Sizes</label>
+                <p className="text-xs text-zinc-500 dark:text-zinc-600 -mt-1">Pick a size for each item — leave blank if you don't want one.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <SizeSelect label="Unisex T-Shirt" value={form.unisexTshirtSize} onChange={(v) => updateField('unisexTshirtSize', v)} />
+                  <SizeSelect label="Unisex Hoodie" value={form.unisexHoodieSize} onChange={(v) => updateField('unisexHoodieSize', v)} />
+                  <SizeSelect label="Unisex Pants" value={form.unisexPantsSize} onChange={(v) => updateField('unisexPantsSize', v)} />
+                  <SizeSelect label="Women's T-Shirt" value={form.womensTshirtSize} onChange={(v) => updateField('womensTshirtSize', v)} />
+                  <SizeSelect label="Women's Hoodie" value={form.womensHoodieSize} onChange={(v) => updateField('womensHoodieSize', v)} />
+                  <SizeSelect label="Women's Pants" value={form.womensPantsSize} onChange={(v) => updateField('womensPantsSize', v)} />
+                </div>
+              </div>
             </div>
 
             {/* Bottom Save */}
@@ -643,34 +712,12 @@ export default function ProfileSettingsPage() {
         )}
       </AnimatePresence>
 
-      {/* Activity Modal */}
-      {actModal && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-zinc-900/40 dark:bg-black/70 backdrop-blur-sm" onClick={() => setActModal(false)} />
-          <div className="relative w-full max-w-md bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-zinc-700 rounded-2xl shadow-2xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-white/5">
-              <h2 className="text-lg font-medium text-zinc-900 dark:text-white">Add Activity</h2>
-              <button onClick={() => setActModal(false)} className="text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer"><X size={20} /></button>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="space-y-1.5">
-                <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Type</label>
-                <select className={`${inputClass} appearance-none cursor-pointer`} value={actForm.type} onChange={(e) => setActForm({ ...actForm, type: e.target.value })}>{ACTIVITY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select>
-              </div>
-              <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Title *</label><input className={inputClass} value={actForm.title} onChange={(e) => setActForm({ ...actForm, title: e.target.value })} placeholder="What did you do?" /></div>
-              <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Description</label><textarea className={`${inputClass} min-h-[60px] resize-y`} value={actForm.description} onChange={(e) => setActForm({ ...actForm, description: e.target.value })} placeholder="Optional details" /></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Date *</label><input type="date" className={inputClass} value={actForm.date} onChange={(e) => setActForm({ ...actForm, date: e.target.value })} /></div>
-                <div className="space-y-1.5"><label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Link</label><input className={inputClass} value={actForm.link} onChange={(e) => setActForm({ ...actForm, link: e.target.value })} placeholder="https://..." /></div>
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <button onClick={() => setActModal(false)} className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white cursor-pointer">Cancel</button>
-                <button onClick={handleAddActivity} disabled={actSaving} className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium disabled:opacity-50 cursor-pointer">{actSaving ? 'Adding...' : 'Add Activity'}</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ActivityDialog
+        open={actModal}
+        initial={actEditing}
+        onClose={() => { setActModal(false); setActEditing(null) }}
+        onSaved={handleActivitySaved}
+      />
     </div>
   )
 }

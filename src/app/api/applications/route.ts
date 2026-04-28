@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { getUserFromRequest, apiSuccess, apiError, parseRegionCountries } from '@/lib/auth'
 import { applicationSchema } from '@/lib/validations'
 
 export async function GET(request: Request) {
@@ -7,16 +7,38 @@ export async function GET(request: Request) {
     const user = await getUserFromRequest(request)
     if (!user) return apiError('Unauthorized', 401)
 
-    // Check if super admin
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
-    if (!admin) return apiError('Forbidden', 403)
+    const isPlatformAdmin = !!admin && (admin.role === 'super_admin' || admin.role === 'community_ops')
+
+    let rolledUpCountries: string[] = []
+    if (!isPlatformAdmin) {
+      const leadMemberships = await prisma.userRegionMembership.findMany({
+        where: { userId: user.id, role: { in: ['lead', 'co_lead'] }, status: 'accepted' },
+        select: { region: { select: { countries: true } } },
+      })
+      if (leadMemberships.length === 0) return apiError('Forbidden', 403)
+      const set = new Set<string>()
+      for (const m of leadMemberships) {
+        for (const c of parseRegionCountries(m.region.countries)) set.add(c.toLowerCase())
+      }
+      rolledUpCountries = Array.from(set)
+      // No countries configured → leads see no rolled-up applications.
+      if (rolledUpCountries.length === 0) {
+        return apiSuccess({ items: [], total: 0, page: 1, pageSize: 20, totalPages: 0 })
+      }
+    }
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || undefined
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = 20
 
-    const where = status ? { status } : {}
+    const where: Record<string, unknown> = {}
+    if (status) where.status = status
+    if (!isPlatformAdmin) {
+      where.country = { in: rolledUpCountries, mode: 'insensitive' }
+    }
+
     const [items, total] = await Promise.all([
       prisma.membershipApplication.findMany({
         where,

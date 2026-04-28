@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { getUserFromRequest, apiSuccess, apiError, parseRegionCountries } from '@/lib/auth'
 
 /**
  * GET /api/admin/activities
@@ -19,10 +19,11 @@ export async function GET(request: Request) {
     const actor = await getUserFromRequest(request)
     if (!actor) return apiError('Unauthorized', 401)
 
-    const isAdmin = !!(await prisma.platformAdmin.findUnique({ where: { userId: actor.id } }))
+    const adminRow = await prisma.platformAdmin.findUnique({ where: { userId: actor.id } })
+    const isAdmin = !!adminRow && (adminRow.role === 'super_admin' || adminRow.role === 'community_ops')
     const leadMemberships = await prisma.userRegionMembership.findMany({
       where: { userId: actor.id, role: { in: ['lead', 'co_lead'] }, status: 'accepted' },
-      select: { regionId: true, region: { select: { slug: true } } },
+      select: { regionId: true, region: { select: { slug: true, countries: true } } },
     })
     const isLead = leadMemberships.length > 0
 
@@ -50,14 +51,31 @@ export async function GET(request: Request) {
       regionIdsAllowed = [region.id]
     }
 
-    // Find users that are members of the allowed regions (if scoped).
+    // Find users that are members of the allowed regions, plus users whose
+    // country rolls up to any of those regions (lead-only union).
     let userIdsScope: string[] | null = null
     if (regionIdsAllowed) {
       const memberRows = await prisma.userRegionMembership.findMany({
         where: { regionId: { in: regionIdsAllowed }, status: 'accepted' },
         select: { userId: true },
       })
-      userIdsScope = Array.from(new Set(memberRows.map((m) => m.userId)))
+      const ids = new Set<string>(memberRows.map((m) => m.userId))
+
+      const countrySet = new Set<string>()
+      for (const m of leadMemberships) {
+        if (regionIdsAllowed.includes(m.regionId)) {
+          for (const c of parseRegionCountries(m.region.countries)) countrySet.add(c.toLowerCase())
+        }
+      }
+      if (countrySet.size > 0) {
+        const countryUsers = await prisma.user.findMany({
+          where: { country: { in: Array.from(countrySet), mode: 'insensitive' }, isActive: true },
+          select: { id: true },
+        })
+        for (const u of countryUsers) ids.add(u.id)
+      }
+
+      userIdsScope = Array.from(ids)
     }
 
     const where: Record<string, unknown> = {}

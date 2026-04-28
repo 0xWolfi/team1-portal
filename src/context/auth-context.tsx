@@ -10,6 +10,8 @@ interface AuthContextType {
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
   isSuperAdmin: boolean
+  isCommunityOps: boolean
+  isPlatformAdmin: boolean
   isRegionLead: (regionSlug?: string) => boolean
   isMember: boolean
   getUserRegions: () => Array<{ id: string; name: string; slug: string; role: string }>
@@ -54,6 +56,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const isSuperAdmin = !!user?.adminRole && user.adminRole.role === 'super_admin'
+  const isCommunityOps = !!user?.adminRole && user.adminRole.role === 'community_ops'
+  const isPlatformAdmin = isSuperAdmin || isCommunityOps
 
   const isRegionLead = (regionSlug?: string) => {
     if (!user?.memberships) return false
@@ -78,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, refreshUser, isSuperAdmin, isRegionLead, isMember, getUserRegions }}>
+    <AuthContext.Provider value={{ user, loading, logout, refreshUser, isSuperAdmin, isCommunityOps, isPlatformAdmin, isRegionLead, isMember, getUserRegions }}>
       {children}
     </AuthContext.Provider>
   )

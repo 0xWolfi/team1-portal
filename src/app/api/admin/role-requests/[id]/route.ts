@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const actor = await getUserFromRequest(request)
     if (!actor) return apiError('Unauthorized', 401)
     const isAdmin = await prisma.platformAdmin.findUnique({ where: { userId: actor.id } })
-    if (!isAdmin) return apiError('Forbidden', 403)
+    if (!isAdmin || isAdmin.role !== 'super_admin') return apiError('Forbidden', 403)
 
     const { id } = await params
     const body = await request.json()

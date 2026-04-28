@@ -123,16 +123,23 @@ export default function AdminMembersPage() {
       showError('Email is required')
       return
     }
-    if (addForm.role !== 'super_admin' && !addForm.regionId) {
+    const isPlatformWide = addForm.role === 'super_admin' || addForm.role === 'community_ops'
+    if (!isPlatformWide && !addForm.regionId) {
       showError('Region is required')
       return
     }
-    const payload = addForm.role === 'super_admin'
+    const payload = isPlatformWide
       ? { email: addForm.email, role: addForm.role }
       : addForm
     const res = await mutate('/api/admin/members', 'POST', payload)
     if (res.success) {
-      success(addForm.role === 'super_admin' ? 'Super admin added successfully!' : 'Member added successfully!')
+      const successMessage =
+        addForm.role === 'super_admin'
+          ? 'Super admin added successfully!'
+          : addForm.role === 'community_ops'
+            ? 'Community ops added successfully!'
+            : 'Member added successfully!'
+      success(successMessage)
       setAddModal(false)
       setAddForm({ email: '', regionId: '', role: 'member' })
       refetch()
@@ -255,15 +262,20 @@ export default function AdminMembersPage() {
             <select
               className="w-full h-11 px-4 bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-xl text-sm text-zinc-800 dark:text-zinc-200 focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/30"
               value={addForm.role}
-              onChange={(e) => setAddForm({ ...addForm, role: e.target.value, regionId: e.target.value === 'super_admin' ? '' : addForm.regionId })}
+              onChange={(e) => {
+                const next = e.target.value
+                const platformWide = next === 'super_admin' || next === 'community_ops'
+                setAddForm({ ...addForm, role: next, regionId: platformWide ? '' : addForm.regionId })
+              }}
             >
               <option value="member">Member</option>
               <option value="co_lead">Co-Lead</option>
               <option value="lead">Lead</option>
               <option value="super_admin">Super Admin</option>
+              <option value="community_ops">Community Ops</option>
             </select>
           </div>
-          {addForm.role !== 'super_admin' && (
+          {addForm.role !== 'super_admin' && addForm.role !== 'community_ops' && (
             <div className="space-y-1.5">
               <label className="block text-sm text-zinc-700 dark:text-zinc-300 font-medium">Region</label>
               <select
@@ -279,6 +291,11 @@ export default function AdminMembersPage() {
           {addForm.role === 'super_admin' && (
             <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-xl p-3 text-xs text-zinc-600 dark:text-zinc-400">
               Super admins have platform-wide access and are not scoped to a region.
+            </div>
+          )}
+          {addForm.role === 'community_ops' && (
+            <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-xl p-3 text-xs text-zinc-600 dark:text-zinc-400">
+              Community Ops have cross-region read access and limited write access (member status, applications, announcements). They cannot edit regions or grant admin roles.
             </div>
           )}
           <div className="flex justify-end gap-3 pt-2">

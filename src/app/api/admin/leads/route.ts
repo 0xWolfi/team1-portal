@@ -9,7 +9,7 @@ export async function GET(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
-    if (!admin) return apiError('Forbidden', 403)
+    if (!admin || (admin.role !== 'super_admin' && admin.role !== 'community_ops')) return apiError('Forbidden', 403)
 
     const regions = await prisma.region.findMany({
       orderBy: { sortOrder: 'asc' },
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
-    if (!admin) return apiError('Forbidden', 403)
+    if (!admin || admin.role !== 'super_admin') return apiError('Forbidden', 403)
 
     const body = await request.json()
     const parsed = leadAssignmentSchema.safeParse(body)

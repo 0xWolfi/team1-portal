@@ -7,7 +7,7 @@ export async function GET(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
-    if (!admin) return apiError('Forbidden', 403)
+    if (!admin || (admin.role !== 'super_admin' && admin.role !== 'community_ops')) return apiError('Forbidden', 403)
 
     const announcements = await prisma.announcement.findMany({
       orderBy: { createdAt: 'desc' },

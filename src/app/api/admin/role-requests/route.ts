@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const actor = await getUserFromRequest(request)
     if (!actor) return apiError('Unauthorized', 401)
     const isAdmin = await prisma.platformAdmin.findUnique({ where: { userId: actor.id } })
-    if (!isAdmin) return apiError('Forbidden', 403)
+    if (!isAdmin || (isAdmin.role !== 'super_admin' && isAdmin.role !== 'community_ops')) return apiError('Forbidden', 403)
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || undefined

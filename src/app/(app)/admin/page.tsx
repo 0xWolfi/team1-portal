@@ -6,10 +6,10 @@ import Link from 'next/link'
 import type { Region, MembershipApplication } from '@/types'
 
 export default function AdminDashboardPage() {
-  const { isSuperAdmin } = useAuth()
+  const { isPlatformAdmin } = useAuth()
   const { data: regions } = useApi<Region[]>('/api/regions')
-  const { data: appData } = useApi<{ items: MembershipApplication[]; total: number }>(isSuperAdmin ? '/api/applications?status=pending' : null)
-  const { data: memberData } = useApi<{ total: number }>(isSuperAdmin ? '/api/admin/members?page=1' : null)
+  const { data: appData } = useApi<{ items: MembershipApplication[]; total: number }>(isPlatformAdmin ? '/api/applications?status=pending' : null)
+  const { data: memberData } = useApi<{ total: number }>(isPlatformAdmin ? '/api/admin/members?page=1' : null)
 
   return (
     <div className="space-y-10">
@@ -18,7 +18,7 @@ export default function AdminDashboardPage() {
         <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">Manage the team1 portal</p>
       </div>
 
-      {isSuperAdmin && (
+      {isPlatformAdmin && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link href="/admin/members" className="p-6 rounded-2xl bg-white border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 dark:bg-zinc-900/50 dark:border-white/5 dark:hover:border-white/20 dark:hover:bg-white/5 transition-all group">
             <div className="flex items-center gap-3 mb-3">

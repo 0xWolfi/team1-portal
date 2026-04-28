@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { getUserFromRequest, apiSuccess, apiError, parseRegionCountries } from '@/lib/auth'
 import { sendMemberAddedMail } from '@/lib/mailer'
 import { memberAssignmentSchema } from '@/lib/validations'
 import { recordAudit, getRequestIp } from '@/lib/audit'
@@ -10,7 +10,23 @@ export async function GET(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
-    if (!admin) return apiError('Forbidden', 403)
+    const isPlatformAdmin = !!admin && (admin.role === 'super_admin' || admin.role === 'community_ops')
+
+    let leadRegionIds: string[] = []
+    let rolledUpCountries: string[] = []
+    if (!isPlatformAdmin) {
+      const leadMemberships = await prisma.userRegionMembership.findMany({
+        where: { userId: user.id, role: { in: ['lead', 'co_lead'] }, status: 'accepted' },
+        select: { regionId: true, region: { select: { countries: true } } },
+      })
+      if (leadMemberships.length === 0) return apiError('Forbidden', 403)
+      leadRegionIds = leadMemberships.map((m) => m.regionId)
+      const set = new Set<string>()
+      for (const m of leadMemberships) {
+        for (const c of parseRegionCountries(m.region.countries)) set.add(c.toLowerCase())
+      }
+      rolledUpCountries = Array.from(set)
+    }
 
     const { searchParams } = new URL(request.url)
     const search = searchParams.get('search')
@@ -18,20 +34,40 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = 20
 
-    const userWhere: Record<string, unknown> = {
-      memberships: {
-        some: {
-          status: 'accepted',
-          ...(regionId ? { regionId } : {}),
+    const scopeOr: Record<string, unknown>[] = []
+    if (isPlatformAdmin) {
+      scopeOr.push({
+        memberships: {
+          some: {
+            status: 'accepted',
+            ...(regionId ? { regionId } : {}),
+          },
         },
-      },
+      })
+    } else {
+      scopeOr.push({
+        memberships: {
+          some: {
+            status: 'accepted',
+            regionId: regionId ? regionId : { in: leadRegionIds },
+          },
+        },
+      })
+      if (rolledUpCountries.length > 0 && !regionId) {
+        scopeOr.push({
+          country: { in: rolledUpCountries, mode: 'insensitive' },
+        })
+      }
     }
+
+    const userWhere: Record<string, unknown> = scopeOr.length === 1 ? scopeOr[0] : { OR: scopeOr }
     if (search) {
-      userWhere.OR = [
+      const searchClause = [
         { displayName: { contains: search, mode: 'insensitive' } },
         { email: { contains: search, mode: 'insensitive' } },
         { username: { contains: search, mode: 'insensitive' } },
       ]
+      userWhere.AND = [{ OR: searchClause }]
     }
 
     const [users, total] = await Promise.all([
@@ -92,6 +128,7 @@ export async function POST(request: Request) {
     if (!user) return apiError('Unauthorized', 401)
 
     const admin = await prisma.platformAdmin.findUnique({ where: { userId: user.id } })
+    const isSuper = !!admin && admin.role === 'super_admin'
     const isLead = await prisma.userRegionMembership.findFirst({
       where: { userId: user.id, role: { in: ['lead', 'co_lead'] } },
     })
@@ -105,9 +142,9 @@ export async function POST(request: Request) {
 
     if (!email && !userId) return apiError('email or userId is required', 422)
 
-    // Only super admins can grant super_admin
-    if (role === 'super_admin' && !admin) {
-      return apiError('Forbidden: only super admins can grant super_admin', 403)
+    // Only super admins can grant platform-wide admin roles
+    if ((role === 'super_admin' || role === 'community_ops') && !isSuper) {
+      return apiError(`Forbidden: only super admins can grant ${role}`, 403)
     }
 
     // Look up user by email if userId not provided; auto-create if they don't exist yet
@@ -137,22 +174,22 @@ export async function POST(request: Request) {
       targetDisplayName = targetUser.displayName
     }
 
-    // Super admin grant: create/upsert PlatformAdmin row, no region membership
-    if (role === 'super_admin') {
+    // Platform-wide admin grant (super_admin / community_ops): upsert PlatformAdmin row, no region membership
+    if (role === 'super_admin' || role === 'community_ops') {
       const adminRow = await prisma.platformAdmin.upsert({
         where: { userId: targetUserId },
-        create: { userId: targetUserId, role: 'super_admin' },
-        update: { role: 'super_admin' },
+        create: { userId: targetUserId, role },
+        update: { role },
       })
 
       await recordAudit({
         userId: user.id,
-        action: 'grant_super_admin',
+        action: role === 'super_admin' ? 'grant_super_admin' : 'grant_community_ops',
         module: 'members',
         entityType: 'PlatformAdmin',
         entityId: adminRow.id,
-        details: `Granted super_admin to ${targetDisplayName} (${targetEmail})`,
-        after: { role: 'super_admin', userId: targetUserId },
+        details: `Granted ${role} to ${targetDisplayName} (${targetEmail})`,
+        after: { role, userId: targetUserId },
         ipAddress: getRequestIp(request),
       })
 

@@ -28,10 +28,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const actor = await getUserFromRequest(request)
     if (!actor) return apiError('Unauthorized', 401)
 
-    const isAdmin = !!(await prisma.platformAdmin.findUnique({ where: { userId: actor.id } }))
+    const adminRow = await prisma.platformAdmin.findUnique({ where: { userId: actor.id } })
+    const isSuper = !!adminRow && adminRow.role === 'super_admin'
+    const isOps = !!adminRow && adminRow.role === 'community_ops'
+    const isAdmin = isSuper || isOps
 
     const { id: targetUserId } = await params
     const body = await request.json()
+
+    // community_ops: only status / inRegionalTg allowed (no admin notes, no cohort, no role/profile fields)
+    if (isOps) {
+      const allowed = new Set<string>(ADMIN_OR_LEAD_FIELDS as readonly string[])
+      const supplied = Object.keys(body).filter((k) => body[k] !== undefined)
+      const hasDisallowed = supplied.some((k) => !allowed.has(k))
+      if (hasDisallowed) return apiError('Forbidden: community_ops can only edit status and inRegionalTg', 403)
+    }
 
     // Region-lead can only touch admin-or-lead fields, and only for members in their region.
     if (!isAdmin) {

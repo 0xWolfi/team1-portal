@@ -21,6 +21,13 @@ const SUPER_ADMIN_NAV = [
   { label: 'Audit Log', href: '/admin/audit', icon: ScrollText },
 ]
 
+const COMMUNITY_OPS_NAV = [
+  { label: 'Dashboard', href: '/admin', icon: Home, exact: true },
+  { label: 'All Members', href: '/admin/members', icon: Users },
+  { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
+  { label: 'Audit Log', href: '/admin/audit', icon: ScrollText },
+]
+
 const LEAD_ADMIN_NAV = [
   { label: 'Dashboard', href: '/admin', icon: Home, exact: true },
   { label: 'Applications', href: '/admin/applications', icon: ClipboardList },
@@ -31,7 +38,7 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isAdmin }: SidebarProps) {
-  const { user, logout, isSuperAdmin, isRegionLead, getUserRegions } = useAuth()
+  const { user, logout, isSuperAdmin, isCommunityOps, isRegionLead, getUserRegions } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -39,7 +46,11 @@ export function Sidebar({ isAdmin }: SidebarProps) {
 
   const regions = getUserRegions()
   const navItems = isAdmin
-    ? (isSuperAdmin ? SUPER_ADMIN_NAV : LEAD_ADMIN_NAV)
+    ? (isSuperAdmin
+        ? SUPER_ADMIN_NAV
+        : isCommunityOps
+          ? COMMUNITY_OPS_NAV
+          : LEAD_ADMIN_NAV)
     : MEMBER_NAV
 
   useEffect(() => { setMobileOpen(false) }, [pathname])
@@ -143,7 +154,7 @@ export function Sidebar({ isAdmin }: SidebarProps) {
         )}
 
         {/* Member: Switch to admin */}
-        {!isAdmin && (isSuperAdmin || isRegionLead()) && (
+        {!isAdmin && (isSuperAdmin || isCommunityOps || isRegionLead()) && (
           <div className="pt-4 mt-4 border-t border-zinc-200 dark:border-white/[0.06]">
             <Link
               href="/admin"

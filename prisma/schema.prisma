@@ -158,6 +158,7 @@ model Region {
   name          String
   slug          String   @unique
   country       String?
+  countries     String?  // JSON array of country names that roll up to this region, e.g. '["India","Pakistan"]'
   description   String?
   logoUrl       String?
   coverImageUrl String?
@@ -316,7 +317,7 @@ model Announcement {
 model PlatformAdmin {
   id        String   @id @default(cuid())
   userId    String   @unique
-  role      String   @default("super_admin") // super_admin
+  role      String   @default("super_admin") // super_admin, community_ops
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

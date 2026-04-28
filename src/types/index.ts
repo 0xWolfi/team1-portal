@@ -110,6 +110,7 @@ export interface Region {
   name: string
   slug: string
   country: string | null
+  countries: string | null
   description: string | null
   logoUrl: string | null
   coverImageUrl: string | null
