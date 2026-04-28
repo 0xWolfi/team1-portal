@@ -116,6 +116,15 @@ export const platformRoleUpdateSchema = z.object({
   platformRole: z.enum(['super_admin', 'community_ops']).nullable(),
 })
 
+// Bulk CSV member import
+export const bulkImportRowSchema = z.object({
+  email: z.string().trim().toLowerCase(),
+  region: z.string().trim(),
+})
+export const bulkImportSchema = z.object({
+  rows: z.array(bulkImportRowSchema).min(1).max(500),
+})
+
 // Notification update
 export const notificationUpdateSchema = z.object({
   markAllRead: z.boolean().optional(),

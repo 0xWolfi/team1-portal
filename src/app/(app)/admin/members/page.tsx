@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Search, Plus, Trash2, X } from 'lucide-react'
+import { Users, Search, Plus, Trash2, X, Upload } from 'lucide-react'
 import { useApi, useMutation } from '@/hooks/use-api'
 import { useToast } from '@/context/toast-context'
 import { useAuth } from '@/context/auth-context'
@@ -12,6 +12,7 @@ import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
+import { BulkImportModal } from '@/components/admin/bulk-import-modal'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { PageLoader } from '@/components/ui/spinner'
 import { getRoleBadgeColor, formatDate } from '@/lib/helpers'
@@ -109,6 +110,9 @@ export default function AdminMembersPage() {
   // Add member modal state
   const [addModal, setAddModal] = useState(false)
   const [addForm, setAddForm] = useState({ email: '', regionId: '', role: 'member' })
+
+  // Bulk CSV import modal state (super_admin only)
+  const [bulkImportOpen, setBulkImportOpen] = useState(false)
 
   // View member detail state
   const [selectedMember, setSelectedMember] = useState<MemberEntry | null>(null)
@@ -315,7 +319,12 @@ export default function AdminMembersPage() {
           <h1 className="text-2xl font-medium text-zinc-900 dark:text-white flex items-center gap-2"><Users size={24} className="text-red-500" /> All Members</h1>
           <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1">{result?.total || 0} total members</p>
         </div>
-        <Button onClick={() => setAddModal(true)}><Plus size={16} /> Add Member</Button>
+        <div className="flex items-center gap-2">
+          {isSuperAdmin && (
+            <Button variant="secondary" onClick={() => setBulkImportOpen(true)}><Upload size={16} /> Import CSV</Button>
+          )}
+          <Button onClick={() => setAddModal(true)}><Plus size={16} /> Add Member</Button>
+        </div>
       </motion.div>
 
       <div className="flex gap-3 flex-wrap">
@@ -383,6 +392,15 @@ export default function AdminMembersPage() {
             {result?.items.length === 0 && <div className="py-12 text-center text-sm text-zinc-500">No members found</div>}
           </div>
         </Card>
+      )}
+
+      {/* Bulk CSV Import (super_admin only) */}
+      {isSuperAdmin && (
+        <BulkImportModal
+          open={bulkImportOpen}
+          onClose={() => setBulkImportOpen(false)}
+          onImported={() => refetch()}
+        />
       )}
 
       {/* Add Member Modal */}

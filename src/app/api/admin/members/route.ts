@@ -45,6 +45,9 @@ export async function GET(request: Request) {
           },
         },
       })
+      if (!regionId) {
+        scopeOr.push({ adminRole: { isNot: null } })
+      }
     } else {
       scopeOr.push({
         memberships: {
