@@ -379,9 +379,15 @@ export default function AdminMembersPage() {
                       </span>
                     )}
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(topRole)}`}>
-                    {topRole === 'co_lead' ? 'Co-Lead' : topRole.charAt(0).toUpperCase() + topRole.slice(1)}
-                  </span>
+                  {m.user.adminRole?.role ? (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${PLATFORM_ROLE_PILL_CLASS[m.user.adminRole.role]}`}>
+                      {platformRoleLabel(m.user.adminRole.role)}
+                    </span>
+                  ) : (
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(topRole)}`}>
+                      {topRole === 'co_lead' ? 'Co-Lead' : topRole.charAt(0).toUpperCase() + topRole.slice(1)}
+                    </span>
+                  )}
                   <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider ${STATUS_PILL_CLASS[userStatus]}`}>
                     {statusUpdating === m.user.id ? '…' : statusLabel(userStatus)}
                   </span>
