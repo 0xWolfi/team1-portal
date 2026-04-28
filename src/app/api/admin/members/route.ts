@@ -84,6 +84,7 @@ export async function GET(request: Request) {
           status: true,
           isActive: true,
           createdAt: true,
+          adminRole: { select: { role: true } },
           memberships: {
             where: { status: 'accepted' },
             select: {

@@ -111,6 +111,11 @@ export const memberAssignmentSchema = z.object({
   { message: 'Region is required', path: ['regionId'] },
 )
 
+// Platform admin role update (super_admin / community_ops / null=revoke)
+export const platformRoleUpdateSchema = z.object({
+  platformRole: z.enum(['super_admin', 'community_ops']).nullable(),
+})
+
 // Notification update
 export const notificationUpdateSchema = z.object({
   markAllRead: z.boolean().optional(),

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Users, Search, Plus, Trash2, X } from 'lucide-react'
 import { useApi, useMutation } from '@/hooks/use-api'
 import { useToast } from '@/context/toast-context'
+import { useAuth } from '@/context/auth-context'
 import { api } from '@/lib/api-client'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -47,13 +48,50 @@ interface MembershipItem {
   region: { id: string; name: string; slug: string }
 }
 
+type PlatformRole = 'super_admin' | 'community_ops'
+
 interface MemberEntry {
   id: string
   role: string
   status: string
   createdAt: string
-  user: { id: string; email: string; displayName: string; username: string | null; avatarUrl: string | null; bio?: string | null; createdAt?: string; status?: MemberStatus; isActive?: boolean }
+  user: {
+    id: string
+    email: string
+    displayName: string
+    username: string | null
+    avatarUrl: string | null
+    bio?: string | null
+    createdAt?: string
+    status?: MemberStatus
+    isActive?: boolean
+    adminRole?: { role: PlatformRole } | null
+  }
   memberships: MembershipItem[]
+}
+
+const REGION_ROLE_OPTIONS: { value: 'member' | 'co_lead' | 'lead'; label: string }[] = [
+  { value: 'member', label: 'Member' },
+  { value: 'co_lead', label: 'Co-Lead' },
+  { value: 'lead', label: 'Lead' },
+]
+
+const PLATFORM_ROLE_OPTIONS: { value: '' | PlatformRole; label: string }[] = [
+  { value: '', label: 'None' },
+  { value: 'community_ops', label: 'Community Ops' },
+  { value: 'super_admin', label: 'Super Admin' },
+]
+
+const PLATFORM_ROLE_PILL_CLASS: Record<PlatformRole | 'none', string> = {
+  super_admin: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-500/10 dark:text-red-400 dark:border-red-500/20',
+  community_ops: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20',
+  none: 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-500/10 dark:text-zinc-400 dark:border-zinc-500/20',
+}
+
+function platformRoleLabel(role: PlatformRole | null | undefined): string {
+  if (role === 'super_admin') return 'Super Admin'
+  if (role === 'community_ops') return 'Community Ops'
+  return 'None'
 }
 
 export default function AdminMembersPage() {
@@ -81,6 +119,21 @@ export default function AdminMembersPage() {
   // Status update state
   const [statusUpdating, setStatusUpdating] = useState<string | null>(null)
   const [pendingRemoval, setPendingRemoval] = useState<{ member: MemberEntry } | null>(null)
+
+  // Per-membership role update state
+  const [membershipRoleUpdating, setMembershipRoleUpdating] = useState<string | null>(null)
+
+  // Platform admin role state (super-admin-only UI)
+  const { isSuperAdmin } = useAuth()
+  const [platformRoleUpdating, setPlatformRoleUpdating] = useState<string | null>(null)
+  const [pendingPlatformRoleChange, setPendingPlatformRoleChange] = useState<
+    | { member: MemberEntry; next: PlatformRole | null; current: PlatformRole | null; mode: 'grant_super' | 'revoke_super' | 'revoke_ops' }
+    | null
+  >(null)
+  const { data: superAdminCountData } = useApi<{ count: number }>(
+    isSuperAdmin ? '/api/admin/super-admin-count' : null,
+  )
+  const superAdminCount = superAdminCountData?.count ?? 0
 
   const updateMemberStatus = async (member: MemberEntry, next: MemberStatus) => {
     setStatusUpdating(member.user.id)
@@ -116,6 +169,92 @@ export default function AdminMembersPage() {
     const m = pendingRemoval.member
     setPendingRemoval(null)
     await updateMemberStatus(m, 'removed')
+  }
+
+  const updateMembershipRole = async (
+    member: MemberEntry,
+    membership: MembershipItem,
+    next: 'member' | 'co_lead' | 'lead',
+  ) => {
+    if (membership.role === next) return
+    setMembershipRoleUpdating(membership.id)
+    const res = await api.fetch<{ id: string; role: string }>(
+      `/api/admin/members/${membership.id}`,
+      { method: 'PUT', body: JSON.stringify({ role: next }) },
+    )
+    setMembershipRoleUpdating(null)
+    if (res.success) {
+      success(`Role updated to ${next === 'co_lead' ? 'Co-Lead' : next.charAt(0).toUpperCase() + next.slice(1)}`)
+      if (selectedMember && selectedMember.user.id === member.user.id) {
+        setSelectedMember({
+          ...selectedMember,
+          memberships: selectedMember.memberships.map((mm) =>
+            mm.id === membership.id ? { ...mm, role: next } : mm,
+          ),
+        })
+      }
+      refetch()
+    } else {
+      showError(res.error || 'Failed to update role')
+    }
+  }
+
+  const submitPlatformRole = async (member: MemberEntry, next: PlatformRole | null) => {
+    setPlatformRoleUpdating(member.user.id)
+    const res = await api.fetch<{ id: string; platformRole: PlatformRole | null }>(
+      `/api/admin/users/${member.user.id}/platform-role`,
+      { method: 'PATCH', body: JSON.stringify({ platformRole: next }) },
+    )
+    setPlatformRoleUpdating(null)
+    if (res.success) {
+      const message = next === null
+        ? 'Platform admin access revoked'
+        : next === 'super_admin'
+          ? 'Granted Super Admin'
+          : 'Granted Community Ops'
+      success(message)
+      if (selectedMember && selectedMember.user.id === member.user.id) {
+        setSelectedMember({
+          ...selectedMember,
+          user: { ...selectedMember.user, adminRole: next ? { role: next } : null },
+        })
+      }
+      refetch()
+    } else {
+      showError(res.error || 'Failed to update platform admin role')
+    }
+  }
+
+  const handlePlatformRoleChange = async (member: MemberEntry, next: PlatformRole | null) => {
+    const current = (member.user.adminRole?.role ?? null) as PlatformRole | null
+    if (current === next) return
+
+    if (current === 'super_admin' && next !== 'super_admin' && superAdminCount <= 1) {
+      showError('Cannot revoke — at least one super admin must exist.')
+      return
+    }
+
+    if (next === 'super_admin') {
+      setPendingPlatformRoleChange({ member, next, current, mode: 'grant_super' })
+      return
+    }
+    if (current === 'super_admin') {
+      setPendingPlatformRoleChange({ member, next, current, mode: 'revoke_super' })
+      return
+    }
+    if (current === 'community_ops' && next === null) {
+      setPendingPlatformRoleChange({ member, next, current, mode: 'revoke_ops' })
+      return
+    }
+
+    await submitPlatformRole(member, next)
+  }
+
+  const confirmPlatformRoleChange = async () => {
+    if (!pendingPlatformRoleChange) return
+    const { member, next } = pendingPlatformRoleChange
+    setPendingPlatformRoleChange(null)
+    await submitPlatformRole(member, next)
   }
 
   const handleAddMember = async () => {
@@ -377,31 +516,92 @@ export default function AdminMembersPage() {
                   </p>
                 </div>
 
+                {isSuperAdmin && (() => {
+                  const currentPlatformRole = (selectedMember.user.adminRole?.role ?? null) as PlatformRole | null
+                  const isLastSuperAdmin = currentPlatformRole === 'super_admin' && superAdminCount <= 1
+                  const isUpdatingPlatform = platformRoleUpdating === selectedMember.user.id
+                  return (
+                    <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-zinc-500">Platform Admin Role</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium uppercase tracking-wider ${PLATFORM_ROLE_PILL_CLASS[currentPlatformRole ?? 'none']}`}>
+                          {platformRoleLabel(currentPlatformRole)}
+                        </span>
+                      </div>
+                      <select
+                        className="w-full h-10 px-3 bg-white border border-zinc-200 dark:bg-zinc-900 dark:border-white/10 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 focus:outline-none focus:border-red-500 disabled:opacity-50"
+                        value={currentPlatformRole ?? ''}
+                        disabled={isUpdatingPlatform}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          const next = (v === '' ? null : (v as PlatformRole))
+                          handlePlatformRoleChange(selectedMember, next)
+                        }}
+                      >
+                        {PLATFORM_ROLE_OPTIONS.map((o) => (
+                          <option
+                            key={o.value || 'none'}
+                            value={o.value}
+                            disabled={isLastSuperAdmin && o.value !== 'super_admin'}
+                          >
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        Super Admins have full platform access including granting admin roles. Community Ops have cross-region read access and limited write access (member status, applications, announcements). None removes platform-wide admin access — region memberships are unaffected.
+                        {isLastSuperAdmin && (
+                          <span className="block mt-1 text-amber-600 dark:text-amber-400">
+                            This is the last Super Admin — at least one must exist.
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  )
+                })()}
+
                 <div className="bg-zinc-50 border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-4">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-xs text-zinc-500">Regions & Roles</p>
                     <span className="text-[10px] text-zinc-500">{selectedMember.memberships.length} total</span>
                   </div>
                   <div className="space-y-2">
-                    {selectedMember.memberships.map((mm) => (
-                      <div key={mm.id} className="flex items-center gap-2">
-                        <Badge variant="info">{mm.region.name}</Badge>
-                        {mm.isPrimary && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-zinc-200 text-zinc-700 dark:border-white/10 dark:text-zinc-400">Primary</span>
-                        )}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${getRoleBadgeColor(mm.role)}`}>
-                          {mm.role === 'co_lead' ? 'Co-Lead' : mm.role.charAt(0).toUpperCase() + mm.role.slice(1)}
-                        </span>
-                        <span className="ml-auto text-[10px] text-zinc-500">{formatDate(mm.createdAt)}</span>
-                        <button
-                          onClick={() => setDeleteTarget({ member: selectedMember, membership: mm })}
-                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-                          title={`Remove from ${mm.region.name}`}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    ))}
+                    {selectedMember.memberships.map((mm) => {
+                      const isUpdating = membershipRoleUpdating === mm.id
+                      return (
+                        <div key={mm.id} className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="info">{mm.region.name}</Badge>
+                          {mm.isPrimary && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full border border-zinc-200 text-zinc-700 dark:border-white/10 dark:text-zinc-400">Primary</span>
+                          )}
+                          <select
+                            className={`text-[10px] h-6 px-2 pr-6 rounded-full border bg-transparent appearance-none focus:outline-none focus:ring-1 focus:ring-red-500/30 disabled:opacity-50 cursor-pointer ${getRoleBadgeColor(mm.role)}`}
+                            value={mm.role}
+                            disabled={isUpdating}
+                            onChange={(e) =>
+                              updateMembershipRole(
+                                selectedMember,
+                                mm,
+                                e.target.value as 'member' | 'co_lead' | 'lead',
+                              )
+                            }
+                            title={`Change role in ${mm.region.name}`}
+                          >
+                            {REGION_ROLE_OPTIONS.map((o) => (
+                              <option key={o.value} value={o.value}>{o.label}</option>
+                            ))}
+                          </select>
+                          <span className="ml-auto text-[10px] text-zinc-500">{formatDate(mm.createdAt)}</span>
+                          <button
+                            onClick={() => setDeleteTarget({ member: selectedMember, membership: mm })}
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-zinc-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                            title={`Remove from ${mm.region.name}`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
 
@@ -426,6 +626,35 @@ export default function AdminMembersPage() {
         message={`This will block ${pendingRemoval?.member.user.displayName || 'this user'} from logging in and hide them from the directory. You can re-activate them later by changing their status back to Active.`}
         confirmLabel="Mark Removed"
         loading={statusUpdating === pendingRemoval?.member.user.id}
+      />
+
+      {/* Platform admin role change confirm */}
+      <ConfirmDialog
+        open={!!pendingPlatformRoleChange}
+        onClose={() => setPendingPlatformRoleChange(null)}
+        onConfirm={confirmPlatformRoleChange}
+        title={
+          pendingPlatformRoleChange?.mode === 'grant_super'
+            ? 'Grant Super Admin?'
+            : pendingPlatformRoleChange?.mode === 'revoke_super'
+              ? 'Revoke Super Admin?'
+              : 'Revoke Community Ops?'
+        }
+        message={
+          pendingPlatformRoleChange?.mode === 'grant_super'
+            ? `Make ${pendingPlatformRoleChange?.member.user.displayName || 'this user'} a super admin? They will have full platform access including the ability to grant admin roles to others.`
+            : pendingPlatformRoleChange?.mode === 'revoke_super'
+              ? `Revoke super admin access from ${pendingPlatformRoleChange?.member.user.displayName || 'this user'}?`
+              : `Revoke community ops access from ${pendingPlatformRoleChange?.member.user.displayName || 'this user'}?`
+        }
+        confirmLabel={
+          pendingPlatformRoleChange?.mode === 'grant_super'
+            ? 'Grant Super Admin'
+            : pendingPlatformRoleChange?.mode === 'revoke_super'
+              ? 'Revoke Super Admin'
+              : 'Revoke Community Ops'
+        }
+        loading={platformRoleUpdating === pendingPlatformRoleChange?.member.user.id}
       />
 
       {/* Delete Confirmation Modal */}
