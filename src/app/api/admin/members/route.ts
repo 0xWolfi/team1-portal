@@ -3,6 +3,7 @@ import { getUserFromRequest, apiSuccess, apiError, parseRegionCountries } from '
 import { sendMemberAddedMail } from '@/lib/mailer'
 import { memberAssignmentSchema } from '@/lib/validations'
 import { recordAudit, getRequestIp } from '@/lib/audit'
+import { notifyMemberJoined, notifyPlatformAdminGranted } from '@/lib/notify'
 
 export async function GET(request: Request) {
   try {
@@ -193,6 +194,8 @@ export async function POST(request: Request) {
         ipAddress: getRequestIp(request),
       })
 
+      await notifyPlatformAdminGranted(targetUserId, role, user.id)
+
       return apiSuccess(adminRow, 201)
     }
 
@@ -225,6 +228,8 @@ export async function POST(request: Request) {
       regionName: membership.region.name,
       role,
     }).catch(() => {})
+
+    await notifyMemberJoined(targetUserId, targetRegionId, role, user.id)
 
     return apiSuccess(membership, 201)
   } catch (e) {

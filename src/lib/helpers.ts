@@ -87,6 +87,17 @@ export function getStatusBadgeColor(status: string) {
   }
 }
 
+export function formatRoleLabel(role: string): string {
+  switch (role) {
+    case 'super_admin': return 'Super Admin'
+    case 'community_ops': return 'Community Ops'
+    case 'co_lead': return 'Co-Lead'
+    case 'lead': return 'Lead'
+    case 'member': return 'Member'
+    default: return role.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  }
+}
+
 export function getPriorityColor(priority: string) {
   switch (priority) {
     case 'urgent': return 'bg-red-500/15 text-red-400'

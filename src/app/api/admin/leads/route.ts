@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { sendMemberAddedMail } from '@/lib/mailer'
 import { leadAssignmentSchema } from '@/lib/validations'
+import { notifyMemberJoined, notifyMemberRoleChanged } from '@/lib/notify'
 
 export async function GET(request: Request) {
   try {
@@ -57,8 +58,11 @@ export async function POST(request: Request) {
       where: { userId_regionId: { userId: targetUser.id, regionId } },
     })
 
+    let didJoin = false
+    let oldRole: string | null = null
     if (existing) {
       // Update role to lead
+      oldRole = existing.role
       await prisma.userRegionMembership.update({
         where: { id: existing.id },
         data: { role },
@@ -67,6 +71,7 @@ export async function POST(request: Request) {
       await prisma.userRegionMembership.create({
         data: { userId: targetUser.id, regionId, role, status: 'accepted', isPrimary: false },
       })
+      didJoin = true
     }
 
     await prisma.auditLog.create({
@@ -81,6 +86,12 @@ export async function POST(request: Request) {
       regionName: region?.name || 'Unknown',
       role,
     }).catch(() => {})
+
+    if (didJoin) {
+      await notifyMemberJoined(targetUser.id, regionId, role, user.id)
+    } else if (oldRole && oldRole !== role) {
+      await notifyMemberRoleChanged(targetUser.id, regionId, oldRole, role, user.id)
+    }
 
     return apiSuccess({ success: true })
   } catch (e) {

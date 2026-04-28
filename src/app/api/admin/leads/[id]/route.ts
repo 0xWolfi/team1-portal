@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { notifyMemberRoleChanged } from '@/lib/notify'
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,11 +12,20 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     const { id } = await params
 
+    const before = await prisma.userRegionMembership.findUnique({
+      where: { id },
+      select: { role: true, userId: true, regionId: true },
+    })
+
     // Demote to member instead of deleting
     await prisma.userRegionMembership.update({
       where: { id },
       data: { role: 'member' },
     })
+
+    if (before && before.role !== 'member') {
+      await notifyMemberRoleChanged(before.userId, before.regionId, before.role, 'member', user.id)
+    }
 
     return apiSuccess({ success: true })
   } catch (e) {

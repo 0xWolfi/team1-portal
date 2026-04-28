@@ -403,18 +403,18 @@ export default function ProfileSettingsPage() {
                 <div className="lg:col-span-2 space-y-6">
                   {/* Skills */}
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Skills</h3>
+                    <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Skills</h3>
                     {form.skills.length > 0 ? <div className="flex flex-wrap gap-2">{form.skills.map((s) => <span key={s} className="px-3 py-1.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-sm rounded-lg">{s}</span>)}</div> : <p className="text-sm text-zinc-500 dark:text-zinc-600">No skills added</p>}
                   </div>
                   {/* Interests */}
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Interests</h3>
+                    <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Interests</h3>
                     {form.interests.length > 0 ? <div className="flex flex-wrap gap-2">{form.interests.map((i) => <span key={i} className="px-3 py-1.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-sm rounded-lg">{i}</span>)}</div> : <p className="text-sm text-zinc-500 dark:text-zinc-600">No interests added</p>}
                   </div>
                   {/* Languages */}
                   {form.languages.length > 0 && (
                     <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                      <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Languages</h3>
+                      <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Languages</h3>
                       <div className="flex flex-wrap gap-2">{form.languages.map((l) => <span key={l} className="px-3 py-1.5 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-sm rounded-lg">{l}</span>)}</div>
                     </div>
                   )}
@@ -423,7 +423,7 @@ export default function ProfileSettingsPage() {
                   {/* Availability */}
                   {(form.availability.length > 0 || form.availabilityHours) && (
                     <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                      <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Availability</h3>
+                      <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Availability</h3>
                       <div className="flex flex-wrap gap-2">
                         {form.availability.map((a) => (
                           <span key={a} className="px-2.5 py-1 bg-zinc-100 border border-zinc-200 text-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 text-xs rounded-md">{a}</span>
@@ -436,12 +436,12 @@ export default function ProfileSettingsPage() {
                   )}
                   {/* Roles */}
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Roles</h3>
+                    <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Roles</h3>
                     {form.roles.length > 0 ? <div className="flex flex-wrap gap-2">{form.roles.map((r) => <span key={r} className="px-3 py-1.5 bg-zinc-200 border border-zinc-300 text-zinc-900 dark:bg-white/10 dark:border-white/20 dark:text-white text-sm rounded-lg">{r}</span>)}</div> : <p className="text-sm text-zinc-500 dark:text-zinc-600">No roles selected</p>}
                   </div>
                   {/* Contact */}
                   <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6">
-                    <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider mb-4">Contact</h3>
+                    <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider mb-4">Contact</h3>
                     <div className="space-y-2.5 text-sm">
                       {form.telegram && <div className="flex items-center gap-3"><Send size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="telegram" handle={form.telegram} /></div>}
                       {form.github && <div className="flex items-center gap-3"><Github size={14} className="text-zinc-500 shrink-0" /><SocialLink platform="github" handle={form.github} /></div>}
@@ -456,7 +456,7 @@ export default function ProfileSettingsPage() {
             {activeTab === 'activities' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Activity Log</h3>
+                  <h3 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Activity Log</h3>
                   <button onClick={() => setActModal(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer">
                     <Plus size={14} /> Add Activity
                   </button>
@@ -517,7 +517,7 @@ export default function ProfileSettingsPage() {
 
             {/* Section 1: Basic Info */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-5">
-              <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Basic Info</h2>
+              <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Basic Info</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldRow label="Display Name" required><input className={inputClass} value={form.displayName} onChange={(e) => updateField('displayName', e.target.value)} placeholder="Your name" /></FieldRow>
                 <FieldRow label="Username">
@@ -582,7 +582,7 @@ export default function ProfileSettingsPage() {
             {/* Section 2: Required Social (always public) */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-5">
               <div className="flex items-center gap-3">
-                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Required Fields</h2>
+                <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Required Fields</h2>
                 <span className="text-[10px] px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400 rounded-full">Always Visible</span>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -593,7 +593,7 @@ export default function ProfileSettingsPage() {
 
             {/* Section 3: Optional Social & Contact */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-5">
-              <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Social & Contact</h2>
+              <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Social & Contact</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldRow label="Telegram" privacy={getPrivacy('telegram')} onPrivacyChange={(v) => setPrivacy('telegram', v)}><input className={inputClass} value={form.telegram} onChange={(e) => updateField('telegram', e.target.value)} placeholder="username" /></FieldRow>
                 <FieldRow label="Email" privacy={getPrivacy('email', 'leads_only')} onPrivacyChange={(v) => setPrivacy('email', v)}><input className={inputClass} value={user?.email || ''} disabled placeholder="From your account" /></FieldRow>
@@ -623,7 +623,7 @@ export default function ProfileSettingsPage() {
 
             {/* Section 4: Education & Languages */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-5">
-              <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Education & Languages</h2>
+              <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Education & Languages</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <FieldRow label="Student Status" privacy={getPrivacy('studentStatus')} onPrivacyChange={(v) => setPrivacy('studentStatus', v)}>
                   <select className={`${inputClass} appearance-none cursor-pointer`} value={form.studentStatus} onChange={(e) => updateField('studentStatus', e.target.value)}>{STUDENT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select>
@@ -644,7 +644,7 @@ export default function ProfileSettingsPage() {
 
             {/* Section 5: Skills, Interests, Roles, Event Hosting */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-6">
-              <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Skills & Interests</h2>
+              <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Skills & Interests</h2>
               <FieldRow label="Skills" privacy={getPrivacy('skills')} onPrivacyChange={(v) => setPrivacy('skills', v)}>
                 <p className="text-xs text-zinc-500 dark:text-zinc-600 mb-2">Type a skill and press Enter</p>
                 <TagInput tags={form.skills} onChange={(t) => updateField('skills', t)} placeholder="e.g. Solidity, React, Rust..." />
@@ -680,7 +680,7 @@ export default function ProfileSettingsPage() {
             {/* Section 6: Lead-Only Fields */}
             <div className="bg-white border border-zinc-200 dark:bg-zinc-900/50 dark:border-white/5 rounded-2xl p-6 space-y-5">
               <div className="flex items-center gap-3">
-                <h2 className="text-sm font-bold text-zinc-500 uppercase tracking-wider">Lead-Only Fields</h2>
+                <h2 className="text-sm font-bold text-brand-600 dark:text-brand-500 uppercase tracking-wider">Lead-Only Fields</h2>
                 <span className="text-[10px] px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400 rounded-full">Visible to Global/Region Leads Only</span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-600 -mt-2">These fields are only visible to your region leads and global admins.</p>

@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
+import { notifyMemberJoined } from '@/lib/notify'
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -47,6 +48,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         await prisma.userRegionMembership.create({
           data: { userId: memberUser.id, regionId, role: 'member', status: 'accepted', isPrimary: true },
         })
+        await notifyMemberJoined(memberUser.id, regionId, 'member', user.id)
       }
     }
 

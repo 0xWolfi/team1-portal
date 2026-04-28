@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { getUserFromRequest, apiSuccess, apiError } from '@/lib/auth'
 import { recordAudit, getRequestIp } from '@/lib/audit'
+import { notifyMemberRoleChanged } from '@/lib/notify'
 import { z } from 'zod'
 
 const memberUpdateSchema = z.object({
@@ -59,6 +60,10 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       after: { role: membership.role, status: membership.status },
       ipAddress: getRequestIp(request),
     })
+
+    if (parsed.data.role && parsed.data.role !== before.role) {
+      await notifyMemberRoleChanged(before.userId, before.regionId, before.role, parsed.data.role, user.id)
+    }
 
     return apiSuccess(membership)
   } catch (e) {

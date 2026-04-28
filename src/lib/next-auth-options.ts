@@ -1,6 +1,7 @@
 import type { NextAuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/db'
+import { notifyMemberJoined } from '@/lib/notify'
 // Token generation is now handled by /api/auth/init (httpOnly cookies)
 import '@/lib/auth' // ensure JWT_SECRET validation runs at startup
 
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
               isPrimary: true,
             },
           })
+          await notifyMemberJoined(newUser.id, globalRegion.id, 'member')
         }
         return true
       }
