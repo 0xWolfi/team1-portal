@@ -191,6 +191,7 @@ export async function notifyPlatformAdminGranted(
   userId: string,
   role: 'super_admin' | 'community_ops',
   actorId: string,
+  extraMessage?: string,
 ): Promise<void> {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } })
@@ -199,6 +200,7 @@ export async function notifyPlatformAdminGranted(
     const roleLabel = formatRoleLabel(role)
     const link = `/admin/members?id=${userId}`
     const recipients = await getOtherSuperAdminRecipients([actorId, userId])
+    const suffix = extraMessage ? ` ${extraMessage}` : ''
 
     const rows: {
       userId: string
@@ -212,7 +214,7 @@ export async function notifyPlatformAdminGranted(
       rows.push({
         userId: rid,
         title: 'Platform admin granted',
-        message: `${user.displayName} was made a ${roleLabel}.`,
+        message: `${user.displayName} was made a ${roleLabel}.${suffix}`,
         type: 'info',
         link,
       })
@@ -221,7 +223,7 @@ export async function notifyPlatformAdminGranted(
     rows.push({
       userId,
       title: `You were made a ${roleLabel}`,
-      message: `You were made a ${roleLabel}.`,
+      message: `You were made a ${roleLabel}.${suffix}`,
       type: 'info',
       link: '/dashboard',
     })
@@ -237,6 +239,7 @@ export async function notifyPlatformAdminRevoked(
   userId: string,
   role: 'super_admin' | 'community_ops',
   actorId: string,
+  extraMessage?: string,
 ): Promise<void> {
   try {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { displayName: true } })
@@ -245,6 +248,7 @@ export async function notifyPlatformAdminRevoked(
     const roleLabel = formatRoleLabel(role)
     const link = `/admin/members?id=${userId}`
     const recipients = await getOtherSuperAdminRecipients([actorId, userId])
+    const suffix = extraMessage ? ` ${extraMessage}` : ''
 
     const rows: {
       userId: string
@@ -258,7 +262,7 @@ export async function notifyPlatformAdminRevoked(
       rows.push({
         userId: rid,
         title: 'Platform admin removed',
-        message: `${user.displayName}'s ${roleLabel} access was removed.`,
+        message: `${user.displayName}'s ${roleLabel} access was removed.${suffix}`,
         type: 'warning',
         link,
       })
@@ -267,7 +271,7 @@ export async function notifyPlatformAdminRevoked(
     rows.push({
       userId,
       title: `Your ${roleLabel} access was removed`,
-      message: `Your ${roleLabel} access was removed.`,
+      message: `Your ${roleLabel} access was removed.${suffix}`,
       type: 'warning',
       link: '/dashboard',
     })
